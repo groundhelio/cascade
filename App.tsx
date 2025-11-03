@@ -91,55 +91,6 @@ const App: React.FC = () => {
     initializeGraph();
   }, []);
 
-  const handleNodeClick = useCallback(async (node: GraphNode) => {
-    console.log('Node clicked:', node.id, node.label);
-    setSelectedNode(node);
-
-    // Fetch memory if not already fetched
-    if (node.memory === undefined) {
-        setGraphData(prevData => ({
-            ...prevData,
-            nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, memory: null } : n)
-        }));
-        try {
-            const memory = await getNodeMemory(node.label);
-            setGraphData(prevData => ({
-                ...prevData,
-                nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, memory } : n)
-            }));
-            setSelectedNode(prev => prev ? { ...prev, memory } : null);
-        } catch(error) {
-            console.error("Failed to get node memory", error);
-             setGraphData(prevData => ({
-                ...prevData,
-                nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, memory: { context: "Error loading content.", reflections: []} } : n)
-            }));
-        }
-    }
-
-    // Fetch severity scores if not already fetched
-    if (node.severityScores === undefined) {
-        setGraphData(prevData => ({
-            ...prevData,
-            nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, severityScores: null } : n)
-        }));
-        try {
-            const scores = await getSeverityScores(node.label);
-            setGraphData(prevData => ({
-                ...prevData,
-                nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, severityScores: scores } : n)
-            }));
-            setSelectedNode(prev => prev ? { ...prev, severityScores: scores } : null);
-        } catch(error) {
-            console.error("Failed to get severity scores", error);
-             setGraphData(prevData => ({
-                ...prevData,
-                nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, severityScores: [] } : n)
-            }));
-        }
-    }
-  }, []);
-
   const handleExpandNode = useCallback(async (nodeToExpand: GraphNode) => {
     if (nodeToExpand.isExpanded || nodeToExpand.depth >= 4) return;
     
@@ -181,6 +132,72 @@ const App: React.FC = () => {
         setIsExpanding(false);
     }
   }, []);
+
+  const handleNodeClick = useCallback(async (node: GraphNode) => {
+    console.log('Node clicked:', node.id, node.label);
+    setSelectedNode(node);
+
+    // Start fetching memory and severity scores in parallel
+    const fetchPromises: Promise<any>[] = [];
+
+    // Fetch memory if not already fetched
+    if (node.memory === undefined) {
+        setGraphData(prevData => ({
+            ...prevData,
+            nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, memory: null } : n)
+        }));
+        
+        const memoryPromise = getNodeMemory(node.label)
+            .then(memory => {
+                setGraphData(prevData => ({
+                    ...prevData,
+                    nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, memory } : n)
+                }));
+                setSelectedNode(prev => prev ? { ...prev, memory } : null);
+            })
+            .catch(error => {
+                console.error("Failed to get node memory", error);
+                setGraphData(prevData => ({
+                    ...prevData,
+                    nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, memory: { context: "Error loading content.", reflections: []} } : n)
+                }));
+            });
+        
+        fetchPromises.push(memoryPromise);
+    }
+
+    // Fetch severity scores if not already fetched
+    if (node.severityScores === undefined) {
+        setGraphData(prevData => ({
+            ...prevData,
+            nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, severityScores: null } : n)
+        }));
+        
+        const scoresPromise = getSeverityScores(node.label)
+            .then(scores => {
+                setGraphData(prevData => ({
+                    ...prevData,
+                    nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, severityScores: scores } : n)
+                }));
+                setSelectedNode(prev => prev ? { ...prev, severityScores: scores } : null);
+            })
+            .catch(error => {
+                console.error("Failed to get severity scores", error);
+                setGraphData(prevData => ({
+                    ...prevData,
+                    nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, severityScores: [] } : n)
+                }));
+            });
+        
+        fetchPromises.push(scoresPromise);
+    }
+
+    // Auto-expand the node if not already expanded and not at max depth
+    if (!node.isExpanded && node.depth < 4) {
+        // Don't wait for data fetching - expand in parallel
+        handleExpandNode(node);
+    }
+  }, [handleExpandNode]);
 
   const handleClosePanel = () => {
     setSelectedNode(null);
