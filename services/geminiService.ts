@@ -238,7 +238,7 @@ if (isMock) {
       return severityCache.get(nodeLabel)!;
     }
     
-    const prompt = `For the societal effect "${nodeLabel}", assess its severity on a scale of 0 (no impact) to 10 (critical impact). Provide scores for two layers: "Institutional Stress" and "Human Impact". Evaluate across these 9 domains: Governance Stability, Economic Function, Infrastructure & Mobility, Public Safety & Security, Social Cohesion, Family Stability, Child & Youth Wellbeing, Health & Humanitarian Access, and Information & Expression Freedom. Return a JSON array of objects, where each object has "category", "institutional", and "human" keys.`;
+    const prompt = `For the societal effect "${nodeLabel}", assess its severity on a scale of 0 (no impact) to 10 (critical impact). Provide scores for two layers: "Institutional Stress" and "Human Impact". Evaluate across these 6 domains: Governance, Economy, Infrastructure, Security, Society, Family & Youth. Return a JSON array of objects, where each object has "category", "institutional", and "human" keys.`;
     const schema = {
       type: Type.ARRAY,
       items: {
