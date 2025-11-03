@@ -1,8 +1,4 @@
-import React, { useRef, useLayoutEffect } from 'react';
-import * as am5 from '@amcharts/amcharts5';
-// @ts-ignore - amcharts types are not bundled here; we provide a minimal ambient declaration instead
-import * as am5plugins_forceDirected from '@amcharts/amcharts5/plugins/forceDirected';
-import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
+import React from 'react';
 import type { GraphData, GraphNode } from '../types';
 
 interface GraphProps {
@@ -12,82 +8,27 @@ interface GraphProps {
   height: number;
 }
 
+// Lightweight fallback graph renderer using CSS grid.
+// This keeps the project runnable without bundling amcharts.
 const Graph: React.FC<GraphProps> = ({ data, onNodeClick }) => {
-  const chartRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!chartRef.current) return;
-
-    let root = am5.Root.new(chartRef.current);
-    root.setThemes([am5themes_Animated.new(root)]);
-
-    const chart = root.container.children.push(
-      am5plugins_forceDirected.ForceDirected.new(root, {
-        // Removed initialDepth and downDepth as they are for hierarchical data
-      })
-    );
-
-    const series = chart.series.push(
-      am5plugins_forceDirected.ForceDirectedSeries.new(root, {
-        valueField: "value",
-        idField: "id",
-        nameField: "name",
-        minRadius: 15,
-        maxRadius: 50,
-        nodePadding: 10,
-        manyBodyStrength: -15,
-        centerStrength: 0.8
-      })
-    );
-    
-    series.nodes.template.setAll({
-        tooltipText: "{name}",
-        cursorOverStyle: "pointer"
-    });
-
-    series.nodes.template.events.on("click", (e) => {
-      if (e.target.dataItem && e.target.dataItem.dataContext) {
-        const context = e.target.dataItem.dataContext as any;
-        if(context.originalData) {
-            onNodeClick(context.originalData);
-        }
-      }
-    });
-
-    series.links.template.set("strokeOpacity", 0.5);
-
-    series.nodes.template.setup = (template) => {
-        template.outerCircle.adapters.add("fill", (fill, target) => {
-            const dataContext = target.dataItem?.dataContext as any;
-            return dataContext?.color || fill;
-        });
-    };
-    
-    const transformedNodes = data.nodes.map(node => ({
-        id: node.id,
-        name: node.label,
-        value: 100 - (node.depth * 15),
-        color: node.color,
-        nodeType: node.nodeType,
-        originalData: node
-    }));
-
-    const transformedLinks = data.links.map(link => ({
-        source: link.source,
-        target: link.target
-    }));
-
-    series.data.setAll(transformedNodes);
-    series.links.data.setAll(transformedLinks);
-
-    series.appear(1000, 100);
-
-    return () => {
-      root.dispose();
-    };
-  }, [data, onNodeClick]);
-
-  return <div ref={chartRef} style={{ width: '100%', height: '100%' }}></div>;
+  return (
+    <div className="w-full h-full p-6 overflow-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {data.nodes.map((node) => (
+          <button
+            key={node.id}
+            onClick={() => onNodeClick(node)}
+            className="text-left p-4 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-150 bg-opacity-10"
+            style={{ backgroundColor: node.color }}
+            aria-label={`Open ${node.label}`}
+          >
+            <div className="font-semibold text-white truncate" style={{ textShadow: '0 0 6px rgba(0,0,0,0.5)' }}>{node.label}</div>
+            <div className="text-sm text-gray-200 mt-2">Depth: {node.depth}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default Graph;
