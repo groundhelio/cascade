@@ -77,6 +77,9 @@ const App: React.FC = () => {
           .map(n => ({ source: n.parentId!, target: n.id }));
 
         setGraphData({ nodes: newNodes, links: newLinks });
+        
+        // Set root node as default selection
+        setSelectedNode(rootNode);
       } catch (err) {
         console.error("Failed to initialize graph:", err);
         setError(err instanceof Error ? err.message : "An unknown error occurred during initialization.");
@@ -89,6 +92,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleNodeClick = useCallback(async (node: GraphNode) => {
+    console.log('Node clicked:', node.id, node.label);
     setSelectedNode(node);
 
     // Fetch memory if not already fetched
@@ -182,11 +186,12 @@ const App: React.FC = () => {
     setSelectedNode(null);
   };
   
-  const selectedNodeData = graphData.nodes.find(n => n.id === selectedNode?.id) || null;
+  // Use selectedNode directly and sync it with graphData for updates
+  const selectedNodeData = selectedNode 
+    ? graphData.nodes.find(n => n.id === selectedNode.id) || selectedNode
+    : null;
 
-  // Calculate dimensions for the split layout
-  const rightPanelWidth = 480; // Fixed width for the right panel
-  const graphWidth = selectedNodeData ? windowSize.width - rightPanelWidth : windowSize.width;
+  console.log('Selected node:', selectedNode?.id, 'Selected node data:', selectedNodeData?.id);
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-white flex">
@@ -209,7 +214,7 @@ const App: React.FC = () => {
       ) : (
         <>
           {/* Left side - Graph */}
-          <div className="relative flex-1 h-screen" style={{ width: graphWidth }}>
+          <div className="relative flex-1 h-screen overflow-hidden">
             <div className="absolute top-4 left-4 z-10 p-4 bg-white bg-opacity-90 rounded-lg border border-gray-200 shadow-sm">
               <h1 className="text-3xl font-extrabold text-gray-900">
                 The Cascading Effect
@@ -220,22 +225,29 @@ const App: React.FC = () => {
             <Graph 
               data={graphData} 
               onNodeClick={handleNodeClick} 
-              width={graphWidth} 
+              width={windowSize.width} 
               height={windowSize.height}
             />
           </div>
 
           {/* Right side - Detail Panel */}
-          {selectedNodeData && (
-            <div className="h-screen border-l border-gray-200 bg-white" style={{ width: rightPanelWidth }}>
+          <div className="h-screen border-l-2 border-gray-300 bg-white shadow-lg" style={{ width: '480px', minWidth: '480px', maxWidth: '480px', flexShrink: 0 }}>
+            {selectedNodeData ? (
               <NodeDetailPanel 
                 node={selectedNodeData} 
                 onClose={handleClosePanel} 
                 onExpand={handleExpandNode}
                 isExpanding={isExpanding}
               />
-            </div>
-          )}
+            ) : (
+              <div className="h-full flex items-center justify-center p-6 text-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">The Cascading Effect</h2>
+                  <p className="text-gray-600">Click on any node to view its details and explore cascading effects.</p>
+                </div>
+              </div>
+            )}
+          </div>
         </>
       )}
     </main>

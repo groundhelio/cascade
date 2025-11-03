@@ -24,6 +24,8 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
   const seriesRef = useRef<am5hierarchy.ForceDirected | null>(null);
   const onNodeClickRef = useRef(onNodeClick);
   const [isInitialized, setIsInitialized] = useState(false);
+  const prevNodeCountRef = useRef(0);
+  const prevLinkCountRef = useRef(0);
 
   // Keep the click handler ref up to date
   useEffect(() => {
@@ -218,9 +220,11 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
     // Store series reference
     seriesRef.current = series;
 
-    // Set initial data
+    // Set initial data and store initial counts
     const hierarchyData = convertToHierarchy(data.nodes, data.links);
     series.data.setAll([hierarchyData]);
+    prevNodeCountRef.current = data.nodes.length;
+    prevLinkCountRef.current = data.links.length;
 
     // Select the root node initially
     if (series.dataItems.length > 0) {
@@ -240,17 +244,27 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
     };
   }, []); // Empty dependency - only run once on mount
 
-  // Update data when it changes (without re-initializing the chart)
+  // Update data only when structural changes occur (new nodes or links added)
   useEffect(() => {
     if (!seriesRef.current || !isInitialized) return;
 
-    console.log('Updating chart data:', data.nodes.length, 'nodes');
+    const currentNodeCount = data.nodes.length;
+    const currentLinkCount = data.links.length;
 
-    const hierarchyData = convertToHierarchy(data.nodes, data.links);
-    
-    // Update data without animation
-    seriesRef.current.data.setAll([hierarchyData]);
-  }, [data]);
+    // Only update if the structure has changed (nodes/links added or removed)
+    if (currentNodeCount !== prevNodeCountRef.current || currentLinkCount !== prevLinkCountRef.current) {
+      console.log('Updating chart structure:', currentNodeCount, 'nodes,', currentLinkCount, 'links');
+
+      const hierarchyData = convertToHierarchy(data.nodes, data.links);
+      
+      // Update data - new nodes will animate in smoothly, existing nodes stay stable
+      seriesRef.current.data.setAll([hierarchyData]);
+
+      // Update the refs
+      prevNodeCountRef.current = currentNodeCount;
+      prevLinkCountRef.current = currentLinkCount;
+    }
+  }, [data.nodes.length, data.links.length]); // Only depend on counts, not the entire data object
 
   return (
     <div 
