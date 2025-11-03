@@ -98,71 +98,61 @@ const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpa
         
         {showColorLegend && (
           <div className="mt-3 space-y-3 text-sm">
-            <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#e11d48' }}></div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">Root Node</div>
-                <div className="text-gray-500 text-xs">#e11d48</div>
+            {/* Root Node */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: '#e11d48' }}></div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-900">Root Event (Crisis)</div>
+                  <div className="text-gray-700 text-xs mt-1">
+                    The initial triggering event that starts the cascade. Represents the primary crisis or disruption.
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">Primary Effects</div>
-                <div className="text-gray-500 text-xs">7 category colors</div>
+            {/* Primary Effects */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 rounded-full flex-shrink-0 mt-0.5 bg-gradient-to-br from-blue-500 to-purple-500"></div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-900">Primary Effects (Neutral/Mixed)</div>
+                  <div className="text-gray-700 text-xs mt-1">
+                    Direct first-level impacts across 7 categories: Politics, Economy, Security, Infrastructure, Communication, Health, and Education. Not inherently good or bad—depends on context.
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 rounded-full opacity-80 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600"></div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">Consequences</div>
-                <div className="text-gray-500 text-xs">Darker shade of parent</div>
+            {/* Consequences */}
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: '#b45309' }}></div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-900">Consequences (Negative)</div>
+                  <div className="text-gray-700 text-xs mt-1">
+                    Darker shades indicate negative cascading effects—problems that compound and worsen. These represent deterioration, harm, or disruption.
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">Responses</div>
-                <div className="text-gray-500 text-xs">#10b981 (Hopeful green)</div>
+            {/* Responses */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: '#10b981' }}></div>
+                <div className="flex-1">
+                  <div className="font-bold text-gray-900">Responses (Positive)</div>
+                  <div className="text-gray-700 text-xs mt-1">
+                    Green represents hope—adaptive responses, interventions, community actions, and policy measures that mitigate harm and build resilience.
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-gray-100">
-              <div className="text-xs text-gray-500">
-                <strong>Primary Effect Colors:</strong>
-                <div className="grid grid-cols-2 gap-1 mt-1">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
-                    <span>#3b82f6</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#8b5cf6' }}></div>
-                    <span>#8b5cf6</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ec4899' }}></div>
-                    <span>#ec4899</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }}></div>
-                    <span>#f59e0b</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></div>
-                    <span>#10b981</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#6366f1' }}></div>
-                    <span>#6366f1</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#14b8a6' }}></div>
-                    <span>#14b8a6</span>
-                  </div>
-                </div>
+            <div className="pt-2 border-t border-gray-200 mt-3">
+              <div className="text-xs text-gray-600 italic">
+                💡 <strong>Tip:</strong> As you expand deeper into the cascade, darker colors indicate worsening consequences, while green nodes show where positive interventions occur.
               </div>
             </div>
           </div>
