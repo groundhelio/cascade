@@ -139,7 +139,7 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
     series.labels.template.setAll({
       minScale: 0.3,
       fontSize: 12,
-      fill: am5.color(0xffffff),
+      fill: am5.color(0x1f2937),
       text: '{name}',
       oversizedBehavior: 'truncate',
       maxWidth: 100,

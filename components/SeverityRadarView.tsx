@@ -19,7 +19,7 @@ const SeverityRadarView: React.FC<SeverityRadarViewProps> = ({ scores }) => {
 
     const theme = am5.Theme.new(root);
     theme.rule('Label').setAll({
-      fill: am5.color(0xffffff),
+      fill: am5.color(0x1f2937),
       fontSize: '0.8rem',
     });
 
@@ -38,7 +38,7 @@ const SeverityRadarView: React.FC<SeverityRadarViewProps> = ({ scores }) => {
 
     const xRenderer = am5radar.AxisRendererCircular.new(root, { minGridDistance: 30 });
     xRenderer.labels.template.setAll({ radius: 10, textAlign: 'center' });
-    xRenderer.grid.template.setAll({ stroke: am5.color(0xffffff), strokeOpacity: 0.3 });
+    xRenderer.grid.template.setAll({ stroke: am5.color(0xe5e7eb), strokeOpacity: 0.8 });
 
     const xAxis = chart.xAxes.push(
       am5xy.CategoryAxis.new(root, {
@@ -49,7 +49,7 @@ const SeverityRadarView: React.FC<SeverityRadarViewProps> = ({ scores }) => {
     );
 
     const yRenderer = am5radar.AxisRendererRadial.new(root, { minGridDistance: 20 });
-    yRenderer.grid.template.setAll({ stroke: am5.color(0xffffff), strokeOpacity: 0.3 });
+    yRenderer.grid.template.setAll({ stroke: am5.color(0xe5e7eb), strokeOpacity: 0.8 });
 
     const yAxis = chart.yAxes.push(
       am5xy.ValueAxis.new(root, {

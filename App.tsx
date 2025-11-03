@@ -6,8 +6,8 @@ import { generateInitialBranches, expandNode, getNodeMemory, getSeverityScores }
 import type { GraphData, GraphNode } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
-const colors = ["#0891b2", "#0d9488", "#65a30d", "#ca8a04", "#c2410c", "#be185d", "#86198f"];
-const responseColor = '#34d399'; // A hopeful green for responses
+const colors = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#6366f1", "#14b8a6"];
+const responseColor = '#10b981'; // A hopeful green for responses
 
 // Helper to generate a darker/lighter shade of a color
 const shadeColor = (color: string, percent: number): string => {
@@ -185,24 +185,24 @@ const App: React.FC = () => {
   const selectedNodeData = graphData.nodes.find(n => n.id === selectedNode?.id) || null;
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-gray-900">
-       <div className="absolute top-4 left-4 z-10 p-4 bg-black bg-opacity-50 rounded-lg">
-        <h1 className="text-3xl font-extrabold text-white" style={{textShadow: '0 0 8px rgba(255, 255, 255, 0.5)'}}>
+    <main className="relative w-screen h-screen overflow-hidden bg-white">
+       <div className="absolute top-4 left-4 z-10 p-4 bg-white bg-opacity-90 rounded-lg border border-gray-200 shadow-sm">
+        <h1 className="text-3xl font-extrabold text-gray-900">
           The Cascading Effect
         </h1>
-        <p className="text-gray-300 max-w-md">A living graph of democracy and disruption.</p>
+        <p className="text-gray-600 max-w-md">A living graph of democracy and disruption.</p>
       </div>
       
       {error ? (
-        <div className="absolute inset-0 bg-red-900 bg-opacity-80 flex flex-col justify-center items-center z-50 p-8 text-center">
-            <h2 className="text-3xl text-white font-bold mb-4">Application Error</h2>
-            <p className="text-xl text-red-200 mb-6">Failed to initialize the application. Please check the details below.</p>
-            <pre className="bg-gray-800 text-red-300 p-4 rounded-lg w-full max-w-2xl overflow-x-auto text-left whitespace-pre-wrap">
+        <div className="absolute inset-0 bg-white flex flex-col justify-center items-center z-50 p-8 text-center">
+            <h2 className="text-3xl text-gray-900 font-bold mb-4">Application Error</h2>
+            <p className="text-xl text-red-600 mb-6">Failed to initialize the application. Please check the details below.</p>
+            <pre className="bg-gray-50 text-red-800 p-4 rounded-lg w-full max-w-2xl overflow-x-auto text-left whitespace-pre-wrap border border-gray-200">
                 <code>{error}</code>
             </pre>
             <button
                 onClick={() => window.location.reload()}
-                className="mt-8 bg-cyan-500 hover:bg-cyan-400 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-cyan-500/50"
+                className="mt-8 bg-gray-900 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
             >
                 Reload Application
             </button>
