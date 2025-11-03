@@ -40,7 +40,8 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
     nodes.forEach(node => {
       // Calculate value based on text length to ensure proper node sizing
       const textLength = node.label.length;
-      const baseValue = Math.max(textLength * 2, 50); // Minimum value of 50, scaled by text length
+      // Scale more aggressively for text - need more space for wrapping
+      const baseValue = Math.max(textLength * 5, 100); // Increased multiplier and minimum
       
       nodeMap.set(node.id, {
         name: node.label,
@@ -105,15 +106,15 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
         singleBranchOnly: false,
         downDepth: 1,
         initialDepth: 10,
-        nodePadding: 30,
-        minRadius: 30, // Minimum node radius
-        maxRadius: 120, // Maximum node radius
+        nodePadding: 40,
+        minRadius: 50, // Increased minimum node radius
+        maxRadius: 200, // Increased maximum node radius for longer text
         valueField: 'value',
         categoryField: 'name',
         childDataField: 'children',
         idField: 'name',
-        manyBodyStrength: -20,
-        centerStrength: 0.5
+        manyBodyStrength: -25, // Stronger repulsion for larger nodes
+        centerStrength: 0.4 // Slightly less centering
       })
     );
 
@@ -192,17 +193,17 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
     // Configure labels
     series.labels.template.setAll({
       minScale: 0,
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: '500',
       fill: am5.color(0x1f2937),
       text: '{name}',
-      oversizedBehavior: 'wrap', // Changed from truncate to wrap
-      maxWidth: 200, // Increased from 100
+      oversizedBehavior: 'wrap',
+      maxWidth: 300, // Increased to accommodate longer text
       textAlign: 'center',
-      paddingTop: 0,
-      paddingBottom: 0,
-      paddingLeft: 5,
-      paddingRight: 5
+      paddingTop: 5,
+      paddingBottom: 5,
+      paddingLeft: 10,
+      paddingRight: 10
     });
 
     // Add click handler
