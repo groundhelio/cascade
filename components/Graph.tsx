@@ -1,5 +1,6 @@
 import React, { useRef, useLayoutEffect } from 'react';
 import * as am5 from '@amcharts/amcharts5';
+// @ts-ignore - amcharts types are not bundled here; we provide a minimal ambient declaration instead
 import * as am5plugins_forceDirected from '@amcharts/amcharts5/plugins/forceDirected';
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
 import type { GraphData, GraphNode } from '../types';
