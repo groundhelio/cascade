@@ -64,6 +64,21 @@ const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpa
             <h3 className={`${sectionTextSize} font-semibold text-gray-900 mb-2 border-b border-gray-200 pb-1`}>Context</h3>
             <p className="text-gray-700 leading-relaxed text-sm sm:text-base">{node.memory.context}</p>
           </div>
+          
+          {node.memory.affectedEntities && node.memory.affectedEntities.length > 0 && (
+            <div>
+              <h3 className={`${sectionTextSize} font-semibold text-gray-900 mb-2 border-b border-gray-200 pb-1`}>Affected Entities</h3>
+              <ul className="space-y-2 list-inside">
+                {node.memory.affectedEntities.map((entity, index) => (
+                  <li key={index} className="flex items-start">
+                    <span className="text-blue-600 mr-3 mt-1">•</span>
+                    <p className="text-gray-700 flex-1 text-sm sm:text-base">{entity}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
           <div>
             <h3 className={`${sectionTextSize} font-semibold text-gray-900 mb-2 border-b border-gray-200 pb-1`}>Reflections</h3>
             <ul className="space-y-2 sm:space-y-3 list-inside">

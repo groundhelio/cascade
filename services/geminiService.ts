@@ -35,7 +35,7 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Declare exported symbols and assign implementations below.
 export let generateInitialBranches: (country?: string | null) => Promise<string[]>;
-export let expandNode: (nodeLabel: string, parentChain?: string[], country?: string | null) => Promise<{ consequences: string[]; responses: string[] }>;
+export let expandNode: (nodeLabel: string, parentChain?: string[], country?: string | null, affectedEntities?: string[]) => Promise<{ consequences: string[]; responses: string[] }>;
 export let getNodeMemory: (nodeLabel: string, parentChain?: string[], country?: string | null) => Promise<NodeMemory>;
 export let getSeverityScores: (nodeLabel: string, parentChain?: string[], country?: string | null) => Promise<SeverityScore[]>;
 
@@ -70,7 +70,7 @@ if (isMock) {
     ];
   };
 
-  expandNode = async (nodeLabel: string, parentChain: string[] = [], country?: string | null): Promise<{ consequences: string[]; responses: string[] }> => {
+  expandNode = async (nodeLabel: string, parentChain: string[] = [], country?: string | null, affectedEntities?: string[]): Promise<{ consequences: string[]; responses: string[] }> => {
     // Check cache first (cache key includes the chain for context-specific results)
     const cacheKey = parentChain.length > 0 ? `${nodeLabel}|${parentChain.join('>')}` : nodeLabel;
     if (expandCache.has(cacheKey)) {
@@ -81,15 +81,19 @@ if (isMock) {
     await wait(300);
     const chainContext = parentChain.length > 0 ? ` (Following: ${parentChain.join(' → ')})` : '';
     const countryContext = country ? ` [${country} Context]` : '';
+    const affectedContext = affectedEntities && affectedEntities.length > 0 
+      ? ` (Affecting: ${affectedEntities.join(', ')})` 
+      : '';
+    
     const result = {
       consequences: [
-        `Critical Supply Chain Breakdown${chainContext}${countryContext}`,
-        `Mass Unemployment Crisis${chainContext}${countryContext}`,
-        `Escalating Social Unrest${chainContext}${countryContext}`
+        `Critical Supply Chain Breakdown${chainContext}${countryContext}${affectedContext}`,
+        `Mass Unemployment Crisis${chainContext}${countryContext}${affectedContext}`,
+        `Escalating Social Unrest${chainContext}${countryContext}${affectedContext}`
       ],
       responses: [
-        `Emergency Relief Programs${chainContext}${countryContext}`,
-        `Community Solidarity Networks${chainContext}${countryContext}`
+        `Emergency Relief Programs${chainContext}${countryContext}${affectedContext}`,
+        `Community Solidarity Networks${chainContext}${countryContext}${affectedContext}`
       ]
     };
     
@@ -108,13 +112,19 @@ if (isMock) {
     }
     
     await wait(200);
-    const countryNote = country ? ` This analysis focuses on ${country}'s context.` : '';
+    const countryNote = country ? ` in ${country}` : '';
     const result = {
-      context: `"${nodeLabel}" often manifests as a localized but rapidly compounding disruption — affecting services, livelihoods, and the social fabric of affected communities. In many cases the initial shock reveals systemic weaknesses that magnify downstream impacts.${countryNote}`,
+      context: `A localized disruption affecting services, livelihoods, and social fabric${countryNote}.`,
       reflections: [
         `Individuals often experience prolonged economic and psychological harm beyond the immediate event.`,
         `Social trust frays when institutions appear unresponsive, accelerating fragmentation.`,
         `Children and other vulnerable groups typically face the longest recovery timelines.`
+      ],
+      affectedEntities: [
+        `Low-income families`,
+        `Small business owners`,
+        `Healthcare workers`,
+        `Elderly populations`
       ]
     };
     
@@ -231,7 +241,7 @@ Return a JSON array of 7 strings, one for each category in order. Each should de
     return generateWithRetries<string[]>(prompt, schema);
   };
 
-  expandNode = async (nodeLabel: string, parentChain: string[] = [], country?: string | null): Promise<{ consequences: string[]; responses: string[] }> => {
+  expandNode = async (nodeLabel: string, parentChain: string[] = [], country?: string | null, affectedEntities?: string[]): Promise<{ consequences: string[]; responses: string[] }> => {
     // Check cache first (cache key includes the chain for context-specific results)
     const cacheKey = parentChain.length > 0 ? `${nodeLabel}|${parentChain.join('>')}` : nodeLabel;
     if (expandCache.has(cacheKey)) {
@@ -249,13 +259,22 @@ ${parentChain.map((node, i) => `${i + 1}. ${node}`).join('\n')}
 Based on this specific cascading chain, identify what "${nodeLabel}" would directly cause next.`;
     }
     
+    // Add affected entities context if available
+    let affectedContext = '';
+    if (affectedEntities && affectedEntities.length > 0) {
+      affectedContext = `\n\nAFFECTED ENTITIES CONTEXT: The following groups are already being impacted by "${nodeLabel}":
+${affectedEntities.map((entity, i) => `${i + 1}. ${entity}`).join('\n')}
+
+Use this information to understand who is currently affected and reason about who will be impacted NEXT in the cascading chain. Consider both direct impacts on these groups and spillover effects to related populations.`;
+    }
+    
     const countryContext = country
       ? `\n\nCOUNTRY CONTEXT: Analyze from ${country}'s specific perspective. Consider ${country}'s political institutions, economic conditions, social structures, infrastructure capabilities, and cultural norms when identifying these cascading effects.`
       : '';
     
-    const prompt = `The societal effect "${nodeLabel}" has occurred${parentChain.length > 0 ? ' as part of a cascading sequence' : ''}.${contextPrompt}${countryContext}
+    const prompt = `The societal effect "${nodeLabel}" has occurred${parentChain.length > 0 ? ' as part of a cascading sequence' : ''}.${contextPrompt}${affectedContext}${countryContext}
 
-Analyze what "${nodeLabel}" would directly cause next in the cascading effect chain. Consider the cumulative impact of the preceding events.
+Analyze what "${nodeLabel}" would directly cause next in the cascading effect chain. Consider the cumulative impact of the preceding events and the populations already affected.
 
 Generate distinct and plausible direct outcomes. Provide two categories in a JSON object:
 
@@ -316,18 +335,24 @@ IMPORTANT: Consequences must be negative (darker shades in visualization), respo
     let chainContext = '';
     if (parentChain.length > 0) {
       const chainText = parentChain.join(' → ');
-      chainContext = `\n\nCASCADING CHAIN: This effect emerged from the following sequence of events:\n${chainText} → ${nodeLabel}\n\nIn the "context" field, explain how this chain of events cascaded into the current effect. Tell the story of causation in a concise, easy-to-digest paragraph that shows how one event led to another, ultimately resulting in "${nodeLabel}". Focus on the interconnected nature and cascading dynamics.`;
+      chainContext = `\n\nCASCADING CHAIN: This effect emerged from the following sequence of events:\n${chainText} → ${nodeLabel}\n\nIn the "context" field, provide ONE concise sentence explaining how this cascading chain led to the current effect.`;
     } else {
-      chainContext = `\n\nThis is a primary effect directly stemming from "National Riots for Democracy". In the "context" field, explain what this effect entails in a real-world scenario.`;
+      chainContext = `\n\nThis is a primary effect directly stemming from "National Riots for Democracy". In the "context" field, provide ONE concise sentence explaining what this effect entails.`;
     }
     
-    const prompt = `Analyze the societal effect: "${nodeLabel}".${countryContext}${chainContext} Provide a detailed response in JSON format. The JSON object should have two keys: "context", a single paragraph explaining the cascading story (or the direct effect if no chain exists), and "reflections", an array of 3 short, insightful sentences about the deeper, often unseen human consequences of this effect.`;
+    const prompt = `Analyze the societal effect: "${nodeLabel}".${countryContext}${chainContext}
+
+Provide a detailed response in JSON format with three keys:
+1. "context": ONE concise sentence (max 25 words) explaining the effect or cascading story
+2. "reflections": An array of 3 short, insightful sentences about the deeper, often unseen human consequences
+3. "affectedEntities": An array of 3-5 specific groups, demographics, or entities who are directly impacted by this effect (e.g., "Small business owners", "Children under 10", "Healthcare workers", "Rural communities")`;
+    
     const schema = {
       type: Type.OBJECT,
       properties: {
         context: {
           type: Type.STRING,
-          description: 'A paragraph explaining the effect in a real-world scenario.',
+          description: 'ONE concise sentence explaining the effect (max 25 words).',
         },
         reflections: {
           type: Type.ARRAY,
@@ -337,7 +362,16 @@ IMPORTANT: Consequences must be negative (darker shades in visualization), respo
           },
           description: 'An array of 3 insightful reflections.',
         },
+        affectedEntities: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.STRING,
+            description: 'A specific group or demographic directly impacted.',
+          },
+          description: 'An array of 3-5 affected entities.',
+        },
       },
+      required: ['context', 'reflections', 'affectedEntities'],
     };
     
     const result = await generateWithRetries<NodeMemory>(prompt, schema);

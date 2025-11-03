@@ -227,7 +227,16 @@ const App: React.FC = () => {
     try {
       // Build parent chain for context
       const parentChain = buildParentChain(nodeToExpand.id);
-      const { consequences, responses } = await expandNode(nodeToExpand.label, parentChain, selectedCountry);
+      
+      // Extract affected entities from the node's memory if available
+      const affectedEntities = nodeToExpand.memory?.affectedEntities || [];
+      
+      const { consequences, responses } = await expandNode(
+        nodeToExpand.label, 
+        parentChain, 
+        selectedCountry,
+        affectedEntities
+      );
       
       const consequenceNodes: GraphNode[] = consequences.map(label => ({
         id: uuidv4(),
@@ -303,7 +312,15 @@ const App: React.FC = () => {
       // Clear cache for this node to force fresh API call
       clearNodeCache(nodeToRefresh.label, parentChain);
       
-      const { consequences, responses } = await expandNode(nodeToRefresh.label, parentChain, selectedCountry);
+      // Extract affected entities from the node's memory if available
+      const affectedEntities = nodeToRefresh.memory?.affectedEntities || [];
+      
+      const { consequences, responses } = await expandNode(
+        nodeToRefresh.label, 
+        parentChain, 
+        selectedCountry,
+        affectedEntities
+      );
       
       const consequenceNodes: GraphNode[] = consequences.map(label => ({
         id: uuidv4(),
@@ -377,7 +394,7 @@ const App: React.FC = () => {
                 console.error("Failed to get node memory", error);
                 setGraphData(prevData => ({
                     ...prevData,
-                    nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, memory: { context: "Error loading content.", reflections: []} } : n)
+                    nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, memory: { context: "Error loading content.", reflections: [], affectedEntities: [] } } : n)
                 }));
             });
         

@@ -1,6 +1,7 @@
 export interface NodeMemory {
   context: string;
   reflections: string[];
+  affectedEntities: string[];
 }
 
 export interface SeverityScore {
