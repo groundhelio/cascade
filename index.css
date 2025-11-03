@@ -1,0 +1,18 @@
+/* Minimal project styles. Tailwind is loaded from CDN in index.html; these styles provide fallbacks and app container sizing. */
+html, body, #root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure amcharts containers take full size */
+.amcharts-root {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Simple dark background when Tailwind isn't loaded yet */
+body { background-color: #0f172a; color: #fff; }
