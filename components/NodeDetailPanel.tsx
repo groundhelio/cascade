@@ -8,9 +8,10 @@ interface NodeDetailPanelProps {
   onExpand: (node: GraphNode) => void;
   onRefresh: (node: GraphNode) => void;
   isExpanding: boolean;
+  selectedCountry: string | null;
 }
 
-const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpand, onRefresh, isExpanding }) => {
+const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpand, onRefresh, isExpanding, selectedCountry }) => {
   const [showColorLegend, setShowColorLegend] = React.useState(false);
   
   if (!node) return null;
@@ -174,6 +175,16 @@ const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpa
             </div>
           </div>
         )}
+      </div>
+
+      {/* Country Context Indicator */}
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
+          <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
+          <span>
+            {selectedCountry ? `Using ${selectedCountry} for reference` : 'Generalized context'}
+          </span>
+        </div>
       </div>
     </div>
   );

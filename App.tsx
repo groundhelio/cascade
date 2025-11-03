@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Graph from './components/Graph';
 import NodeDetailPanel from './components/NodeDetailPanel';
+import CountrySelectionModal from './components/CountrySelectionModal';
 import Loader from './components/Loader';
-import { generateInitialBranches, expandNode, getNodeMemory, getSeverityScores, clearNodeCache } from './services/geminiService';
+import { generateInitialBranches, expandNode, getNodeMemory, getSeverityScores, clearNodeCache, clearAllCaches } from './services/geminiService';
 import { loadGraphState, saveGraphState } from './services/firebaseService';
 import type { GraphData, GraphNode } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,9 +39,65 @@ const App: React.FC = () => {
   const [isExpanding, setIsExpanding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
   
   // Use ref to track save timeout for debouncing
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load country from localStorage on mount
+  useEffect(() => {
+    const savedCountry = localStorage.getItem('cascadeCountryContext');
+    if (savedCountry && savedCountry !== 'null') {
+      setSelectedCountry(savedCountry);
+    }
+  }, []);
+
+  // Handle country selection change
+  const handleCountryChange = useCallback((newCountry: string | null) => {
+    console.log('[Country] Changing context from', selectedCountry, 'to', newCountry);
+    
+    // Save to localStorage
+    if (newCountry) {
+      localStorage.setItem('cascadeCountryContext', newCountry);
+    } else {
+      localStorage.removeItem('cascadeCountryContext');
+    }
+    
+    setSelectedCountry(newCountry);
+    
+    // Clear all caches since context has changed
+    clearAllCaches();
+    
+    // Remove all nodes at depth >= 2 (keep root and primary effects)
+    setGraphData(prevData => {
+      const nodesToKeep = prevData.nodes.filter(n => n.depth <= 1);
+      const nodeIdsToKeep = new Set(nodesToKeep.map(n => n.id));
+      
+      // Reset isExpanded for all kept nodes
+      const resetNodes = nodesToKeep.map(n => ({ ...n, isExpanded: n.depth === 0 }));
+      
+      // Filter links to only those between kept nodes
+      const linksToKeep = prevData.links.filter(l =>
+        nodeIdsToKeep.has(l.source) && nodeIdsToKeep.has(l.target)
+      );
+      
+      console.log(`[Country] Kept ${resetNodes.length} nodes (depth <= 1), removed ${prevData.nodes.length - resetNodes.length} nodes`);
+      
+      return {
+        nodes: resetNodes,
+        links: linksToKeep,
+      };
+    });
+    
+    // Close selected node panel if it was at depth >= 2
+    setSelectedNode(prev => {
+      if (prev && prev.depth >= 2) {
+        return null;
+      }
+      return prev;
+    });
+  }, [selectedCountry]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -75,7 +132,7 @@ const App: React.FC = () => {
           nodeType: 'root',
         };
 
-        const initialBranches = await generateInitialBranches();
+        const initialBranches = await generateInitialBranches(selectedCountry);
 
         const newNodes: GraphNode[] = [
           rootNode,
@@ -162,7 +219,7 @@ const App: React.FC = () => {
     try {
       // Build parent chain for context
       const parentChain = buildParentChain(nodeToExpand.id);
-      const { consequences, responses } = await expandNode(nodeToExpand.label, parentChain);
+      const { consequences, responses } = await expandNode(nodeToExpand.label, parentChain, selectedCountry);
       
       const consequenceNodes: GraphNode[] = consequences.map(label => ({
         id: uuidv4(),
@@ -238,7 +295,7 @@ const App: React.FC = () => {
       // Clear cache for this node to force fresh API call
       clearNodeCache(nodeToRefresh.label, parentChain);
       
-      const { consequences, responses } = await expandNode(nodeToRefresh.label, parentChain);
+      const { consequences, responses } = await expandNode(nodeToRefresh.label, parentChain, selectedCountry);
       
       const consequenceNodes: GraphNode[] = consequences.map(label => ({
         id: uuidv4(),
@@ -292,7 +349,7 @@ const App: React.FC = () => {
             nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, memory: null } : n)
         }));
         
-        const memoryPromise = getNodeMemory(node.label)
+        const memoryPromise = getNodeMemory(node.label, [], selectedCountry)
             .then(memory => {
                 setGraphData(prevData => ({
                     ...prevData,
@@ -318,7 +375,7 @@ const App: React.FC = () => {
             nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, severityScores: null } : n)
         }));
         
-        const scoresPromise = getSeverityScores(node.label)
+        const scoresPromise = getSeverityScores(node.label, [], selectedCountry)
             .then(scores => {
                 setGraphData(prevData => ({
                     ...prevData,
@@ -378,7 +435,11 @@ const App: React.FC = () => {
           {/* Left side - Graph */}
           <div className="relative flex-1 h-screen overflow-hidden">
             <div className="absolute top-4 left-4 z-10 p-4 bg-white bg-opacity-90 rounded-lg border border-gray-200 shadow-sm">
-              <h1 className="text-3xl font-extrabold text-gray-900">
+              <h1 
+                className="text-3xl font-extrabold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" 
+                onClick={() => setIsCountryModalOpen(true)}
+                title="Click to set country context"
+              >
                 The Cascade
               </h1>
               <p className="text-gray-600 max-w-md">A living graph of democracy and disruption.</p>
@@ -392,6 +453,14 @@ const App: React.FC = () => {
             />
           </div>
 
+          {/* Country Selection Modal */}
+          <CountrySelectionModal
+            isOpen={isCountryModalOpen}
+            currentCountry={selectedCountry}
+            onClose={() => setIsCountryModalOpen(false)}
+            onSelect={handleCountryChange}
+          />
+
           {/* Right side - Detail Panel */}
           <div className="h-screen border-l-2 border-gray-300 bg-white shadow-lg overflow-y-auto" style={{ width: '480px', minWidth: '480px', maxWidth: '480px', flexShrink: 0 }}>
             {selectedNodeData && selectedNodeData.id !== 'root' ? (
@@ -401,6 +470,7 @@ const App: React.FC = () => {
                 onExpand={handleExpandNode}
                 onRefresh={handleRefreshNode}
                 isExpanding={isExpanding}
+                selectedCountry={selectedCountry}
               />
             ) : (
               <div className="h-full flex flex-col justify-center p-8">

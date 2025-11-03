@@ -34,10 +34,10 @@ const isMock = !API_KEY;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Declare exported symbols and assign implementations below.
-export let generateInitialBranches: () => Promise<string[]>;
-export let expandNode: (nodeLabel: string, parentChain?: string[]) => Promise<{ consequences: string[]; responses: string[] }>;
-export let getNodeMemory: (nodeLabel: string, parentChain?: string[]) => Promise<NodeMemory>;
-export let getSeverityScores: (nodeLabel: string, parentChain?: string[]) => Promise<SeverityScore[]>;
+export let generateInitialBranches: (country?: string | null) => Promise<string[]>;
+export let expandNode: (nodeLabel: string, parentChain?: string[], country?: string | null) => Promise<{ consequences: string[]; responses: string[] }>;
+export let getNodeMemory: (nodeLabel: string, parentChain?: string[], country?: string | null) => Promise<NodeMemory>;
+export let getSeverityScores: (nodeLabel: string, parentChain?: string[], country?: string | null) => Promise<SeverityScore[]>;
 
 // Export function to clear cache for a specific node (used for refresh)
 export const clearNodeCache = (nodeLabel: string, parentChain: string[] = []): void => {
@@ -46,22 +46,31 @@ export const clearNodeCache = (nodeLabel: string, parentChain: string[] = []): v
   console.log(`[Cache] Cleared cache for: ${cacheKey}`);
 };
 
+// Export function to clear all caches (used for country context change)
+export const clearAllCaches = (): void => {
+  memoryCache.clear();
+  severityCache.clear();
+  expandCache.clear();
+  console.log(`[Cache] Cleared all caches`);
+};
+
 if (isMock) {
   // --- Mock implementations for local development ---
-  generateInitialBranches = async (): Promise<string[]> => {
+  generateInitialBranches = async (country?: string | null): Promise<string[]> => {
     await wait(300);
+    const contextSuffix = country ? ` in ${country}` : '';
     return [
-      "Government Response Measures",
-      "Economic Disruption Waves",
-      "Social Cohesion Challenges",
-      "Infrastructure Strain",
-      "Information Ecosystem Changes",
-      "Public Health Impact",
-      "Educational System Disruption"
+      `Government Response Measures${contextSuffix}`,
+      `Economic Disruption Waves${contextSuffix}`,
+      `Social Cohesion Challenges${contextSuffix}`,
+      `Infrastructure Strain${contextSuffix}`,
+      `Information Ecosystem Changes${contextSuffix}`,
+      `Public Health Impact${contextSuffix}`,
+      `Educational System Disruption${contextSuffix}`
     ];
   };
 
-  expandNode = async (nodeLabel: string, parentChain: string[] = []): Promise<{ consequences: string[]; responses: string[] }> => {
+  expandNode = async (nodeLabel: string, parentChain: string[] = [], country?: string | null): Promise<{ consequences: string[]; responses: string[] }> => {
     // Check cache first (cache key includes the chain for context-specific results)
     const cacheKey = parentChain.length > 0 ? `${nodeLabel}|${parentChain.join('>')}` : nodeLabel;
     if (expandCache.has(cacheKey)) {
@@ -71,15 +80,16 @@ if (isMock) {
     
     await wait(300);
     const chainContext = parentChain.length > 0 ? ` (Following: ${parentChain.join(' → ')})` : '';
+    const countryContext = country ? ` [${country} Context]` : '';
     const result = {
       consequences: [
-        `Critical Supply Chain Breakdown ${chainContext}`,
-        `Mass Unemployment Crisis ${chainContext}`,
-        `Escalating Social Unrest ${chainContext}`
+        `Critical Supply Chain Breakdown${chainContext}${countryContext}`,
+        `Mass Unemployment Crisis${chainContext}${countryContext}`,
+        `Escalating Social Unrest${chainContext}${countryContext}`
       ],
       responses: [
-        `Emergency Relief Programs ${chainContext}`,
-        `Community Solidarity Networks ${chainContext}`
+        `Emergency Relief Programs${chainContext}${countryContext}`,
+        `Community Solidarity Networks${chainContext}${countryContext}`
       ]
     };
     
@@ -90,7 +100,7 @@ if (isMock) {
     return result;
   };
 
-  getNodeMemory = async (nodeLabel: string): Promise<NodeMemory> => {
+  getNodeMemory = async (nodeLabel: string, parentChain: string[] = [], country?: string | null): Promise<NodeMemory> => {
     // Check cache first
     if (memoryCache.has(nodeLabel)) {
       console.log(`[Cache Hit] getNodeMemory: ${nodeLabel}`);
@@ -98,8 +108,9 @@ if (isMock) {
     }
     
     await wait(200);
+    const countryNote = country ? ` This analysis focuses on ${country}'s context.` : '';
     const result = {
-      context: `"${nodeLabel}" often manifests as a localized but rapidly compounding disruption — affecting services, livelihoods, and the social fabric of affected communities. In many cases the initial shock reveals systemic weaknesses that magnify downstream impacts.`,
+      context: `"${nodeLabel}" often manifests as a localized but rapidly compounding disruption — affecting services, livelihoods, and the social fabric of affected communities. In many cases the initial shock reveals systemic weaknesses that magnify downstream impacts.${countryNote}`,
       reflections: [
         `Individuals often experience prolonged economic and psychological harm beyond the immediate event.`,
         `Social trust frays when institutions appear unresponsive, accelerating fragmentation.`,
@@ -114,7 +125,7 @@ if (isMock) {
     return result;
   };
 
-  getSeverityScores = async (nodeLabel: string): Promise<SeverityScore[]> => {
+  getSeverityScores = async (nodeLabel: string, parentChain: string[] = [], country?: string | null): Promise<SeverityScore[]> => {
     // Check cache first
     if (severityCache.has(nodeLabel)) {
       console.log(`[Cache Hit] getSeverityScores: ${nodeLabel}`);
@@ -191,8 +202,12 @@ if (isMock) {
     throw new Error('Exhausted all retries for Gemini API call.');
   };
 
-  generateInitialBranches = async (): Promise<string[]> => {
-    const prompt = `Based on the central event "National Riots for Democracy", identify 7 primary categories of cascading societal effects. 
+  generateInitialBranches = async (country?: string | null): Promise<string[]> => {
+    const countryContext = country 
+      ? `\n\nCOUNTRY CONTEXT: Analyze specifically from ${country}'s perspective. Consider ${country}'s unique political system, economic structure, social dynamics, and cultural context when identifying these effects.`
+      : `\n\nProvide general analysis applicable across different countries.`;
+    
+    const prompt = `Based on the central event "National Riots for Democracy", identify 7 primary categories of cascading societal effects.${countryContext}
 
 For each category, provide one concise, impactful label for the initial effect. These should be NEUTRAL or MIXED in tone (not inherently positive or negative), as they represent the first-level impacts that can lead to both consequences and responses.
 
@@ -216,7 +231,7 @@ Return a JSON array of 7 strings, one for each category in order. Each should de
     return generateWithRetries<string[]>(prompt, schema);
   };
 
-  expandNode = async (nodeLabel: string, parentChain: string[] = []): Promise<{ consequences: string[]; responses: string[] }> => {
+  expandNode = async (nodeLabel: string, parentChain: string[] = [], country?: string | null): Promise<{ consequences: string[]; responses: string[] }> => {
     // Check cache first (cache key includes the chain for context-specific results)
     const cacheKey = parentChain.length > 0 ? `${nodeLabel}|${parentChain.join('>')}` : nodeLabel;
     if (expandCache.has(cacheKey)) {
@@ -234,7 +249,11 @@ ${parentChain.map((node, i) => `${i + 1}. ${node}`).join('\n')}
 Based on this specific cascading chain, identify what "${nodeLabel}" would directly cause next.`;
     }
     
-    const prompt = `The societal effect "${nodeLabel}" has occurred${parentChain.length > 0 ? ' as part of a cascading sequence' : ''}.${contextPrompt}
+    const countryContext = country
+      ? `\n\nCOUNTRY CONTEXT: Analyze from ${country}'s specific perspective. Consider ${country}'s political institutions, economic conditions, social structures, infrastructure capabilities, and cultural norms when identifying these cascading effects.`
+      : '';
+    
+    const prompt = `The societal effect "${nodeLabel}" has occurred${parentChain.length > 0 ? ' as part of a cascading sequence' : ''}.${contextPrompt}${countryContext}
 
 Analyze what "${nodeLabel}" would directly cause next in the cascading effect chain. Consider the cumulative impact of the preceding events.
 
@@ -282,14 +301,18 @@ IMPORTANT: Consequences must be negative (darker shades in visualization), respo
     return result;
   };
 
-  getNodeMemory = async (nodeLabel: string): Promise<NodeMemory> => {
+  getNodeMemory = async (nodeLabel: string, parentChain: string[] = [], country?: string | null): Promise<NodeMemory> => {
     // Check cache first
     if (memoryCache.has(nodeLabel)) {
       console.log(`[Cache Hit] getNodeMemory: ${nodeLabel}`);
       return memoryCache.get(nodeLabel)!;
     }
     
-    const prompt = `Analyze the societal effect: "${nodeLabel}". Provide a detailed response in JSON format. The JSON object should have two keys: "context", a single paragraph explaining what this effect entails in a real-world scenario, and "reflections", an array of 3 short, insightful sentences about the deeper, often unseen human consequences of this effect.`;
+    const countryContext = country
+      ? ` Focus specifically on ${country}'s context, considering its unique societal, political, and economic landscape.`
+      : '';
+    
+    const prompt = `Analyze the societal effect: "${nodeLabel}".${countryContext} Provide a detailed response in JSON format. The JSON object should have two keys: "context", a single paragraph explaining what this effect entails in a real-world scenario, and "reflections", an array of 3 short, insightful sentences about the deeper, often unseen human consequences of this effect.`;
     const schema = {
       type: Type.OBJECT,
       properties: {
@@ -317,14 +340,18 @@ IMPORTANT: Consequences must be negative (darker shades in visualization), respo
     return result;
   };
 
-  getSeverityScores = async (nodeLabel: string): Promise<SeverityScore[]> => {
+  getSeverityScores = async (nodeLabel: string, parentChain: string[] = [], country?: string | null): Promise<SeverityScore[]> => {
     // Check cache first
     if (severityCache.has(nodeLabel)) {
       console.log(`[Cache Hit] getSeverityScores: ${nodeLabel}`);
       return severityCache.get(nodeLabel)!;
     }
     
-    const prompt = `For the societal effect "${nodeLabel}", assess its severity on a scale of 0 (no impact) to 10 (critical impact). Provide scores for two layers: "Institutional Stress" and "Human Impact". Evaluate across these 6 domains: Governance, Economy, Infrastructure, Security, Society, Family & Youth. Return a JSON array of objects, where each object has "category", "institutional", and "human" keys.`;
+    const countryContext = country
+      ? ` Assess severity specifically for ${country}, considering its institutional capacity, resilience, and societal vulnerabilities.`
+      : '';
+    
+    const prompt = `For the societal effect "${nodeLabel}", assess its severity on a scale of 0 (no impact) to 10 (critical impact).${countryContext} Provide scores for two layers: "Institutional Stress" and "Human Impact". Evaluate across these 6 domains: Governance, Economy, Infrastructure, Security, Society, Family & Youth. Return a JSON array of objects, where each object has "category", "institutional", and "human" keys.`;
     const schema = {
       type: Type.ARRAY,
       items: {
