@@ -117,12 +117,11 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
       })
     );
 
-    // Add animated bullets to links
+    // Add animated bullets to links - arrows point from parent to child (outward)
     series.linkBullets.push(function(root, source, target) {
       const bullet = am5.Bullet.new(root, {
         locationX: 0.5,
         autoRotate: true,
-        autoRotateAngle: 180,
         sprite: am5.Graphics.new(root, {
           fill: source.get("fill"),
           centerY: am5.percent(50),
@@ -139,8 +138,8 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
 
       bullet.animate({
         key: "locationX",
-        to: -0.1,
-        from: 1.1,
+        to: 1.1,
+        from: -0.1,
         duration: Math.random() * 500 + 1000,
         loops: Infinity,
         easing: am5.ease.quad
