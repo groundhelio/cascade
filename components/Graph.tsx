@@ -9,6 +9,7 @@ interface GraphProps {
   onNodeClick: (node: GraphNode) => void;
   width: number;
   height: number;
+  breakpoint: string;
 }
 
 interface HierarchyNode {
@@ -18,7 +19,7 @@ interface HierarchyNode {
   nodeData?: GraphNode; // Store original node data
 }
 
-const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
+const Graph = ({ data, onNodeClick, width, height, breakpoint }: GraphProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<am5.Root | null>(null);
   const seriesRef = useRef<am5hierarchy.ForceDirected | null>(null);
@@ -31,6 +32,50 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
   useEffect(() => {
     onNodeClickRef.current = onNodeClick;
   }, [onNodeClick]);
+
+  // Get responsive node sizing based on breakpoint
+  const getNodeSizing = () => {
+    switch (breakpoint) {
+      case 'mobile':
+        return {
+          minRadius: 30,
+          maxRadius: 120,
+          fontSize: 12,
+          maxWidth: 200,
+          nodePadding: 30,
+          manyBodyStrength: -20
+        };
+      case 'tablet':
+        return {
+          minRadius: 40,
+          maxRadius: 150,
+          fontSize: 14,
+          maxWidth: 250,
+          nodePadding: 35,
+          manyBodyStrength: -22
+        };
+      case 'desktop':
+        return {
+          minRadius: 50,
+          maxRadius: 180,
+          fontSize: 15,
+          maxWidth: 280,
+          nodePadding: 40,
+          manyBodyStrength: -25
+        };
+      default: // large-desktop
+        return {
+          minRadius: 50,
+          maxRadius: 200,
+          fontSize: 15,
+          maxWidth: 300,
+          nodePadding: 40,
+          manyBodyStrength: -25
+        };
+    }
+  };
+
+  const nodeSizing = getNodeSizing();
 
   // Convert flat node/link structure to hierarchical structure
   const convertToHierarchy = (nodes: GraphNode[], links: { source: string; target: string }[]): HierarchyNode => {
@@ -106,15 +151,15 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
         singleBranchOnly: false,
         downDepth: 1,
         initialDepth: 10,
-        nodePadding: 40,
-        minRadius: 50, // Increased minimum node radius
-        maxRadius: 200, // Increased maximum node radius for longer text
+        nodePadding: nodeSizing.nodePadding,
+        minRadius: nodeSizing.minRadius,
+        maxRadius: nodeSizing.maxRadius,
         valueField: 'value',
         categoryField: 'name',
         childDataField: 'children',
         idField: 'name',
-        manyBodyStrength: -25, // Stronger repulsion for larger nodes
-        centerStrength: 0.4 // Slightly less centering
+        manyBodyStrength: nodeSizing.manyBodyStrength,
+        centerStrength: 0.4
       })
     );
 
@@ -193,12 +238,12 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
     // Configure labels
     series.labels.template.setAll({
       minScale: 0,
-      fontSize: 15,
+      fontSize: nodeSizing.fontSize,
       fontWeight: '500',
       fill: am5.color(0x1f2937),
       text: '{name}',
       oversizedBehavior: 'wrap',
-      maxWidth: 300, // Increased to accommodate longer text
+      maxWidth: nodeSizing.maxWidth,
       textAlign: 'center',
       paddingTop: 5,
       paddingBottom: 5,
@@ -242,7 +287,7 @@ const Graph = ({ data, onNodeClick, width, height }: GraphProps) => {
       setIsInitialized(false);
       root.dispose();
     };
-  }, []); // Empty dependency - only run once on mount
+  }, [breakpoint]); // Re-initialize when breakpoint changes
 
   // Update data only when structural changes occur (new nodes or links added)
   useEffect(() => {

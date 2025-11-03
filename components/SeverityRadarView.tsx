@@ -7,10 +7,27 @@ import type { SeverityScore } from '../types';
 
 interface SeverityRadarViewProps {
   scores: SeverityScore[];
+  breakpoint: string;
 }
 
-const SeverityRadarView: React.FC<SeverityRadarViewProps> = ({ scores }) => {
+const SeverityRadarView: React.FC<SeverityRadarViewProps> = ({ scores, breakpoint }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+
+  // Get responsive chart height based on breakpoint
+  const getChartHeight = () => {
+    switch (breakpoint) {
+      case 'mobile':
+        return '250px';
+      case 'tablet':
+        return '300px';
+      case 'desktop':
+        return '350px';
+      default: // large-desktop
+        return '400px';
+    }
+  };
+
+  const chartHeight = getChartHeight();
 
   useLayoutEffect(() => {
     if (!chartRef.current || scores.length === 0) return;
@@ -104,9 +121,9 @@ const SeverityRadarView: React.FC<SeverityRadarViewProps> = ({ scores }) => {
     return () => {
       if (root) root.dispose();
     };
-  }, [scores]);
+  }, [scores, breakpoint]);
 
-  return <div ref={chartRef} style={{ width: '100%', height: '350px' }} />;
+  return <div ref={chartRef} style={{ width: '100%', height: chartHeight }} />;
 };
 
 export default SeverityRadarView;

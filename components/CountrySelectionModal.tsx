@@ -5,6 +5,7 @@ interface CountrySelectionModalProps {
   currentCountry: string | null;
   onClose: () => void;
   onSelect: (country: string | null) => void;
+  breakpoint: string;
 }
 
 const COUNTRIES = [
@@ -85,12 +86,14 @@ const CountrySelectionModal: React.FC<CountrySelectionModalProps> = ({
   currentCountry,
   onClose,
   onSelect,
+  breakpoint,
 }) => {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(currentCountry);
   const [searchTerm, setSearchTerm] = useState('');
 
   if (!isOpen) return null;
 
+  const isMobile = breakpoint === 'mobile';
   const filteredCountries = COUNTRIES.filter(country =>
     country.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -111,14 +114,14 @@ const CountrySelectionModal: React.FC<CountrySelectionModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[80vh] flex flex-col">
+      <div className={`bg-white rounded-lg shadow-2xl ${isMobile ? 'w-full' : 'max-w-md w-full'} max-h-[80vh] flex flex-col`}>
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
+        <div className={`${isMobile ? 'p-4' : 'p-6'} border-b border-gray-200`}>
           <div className="flex justify-between items-start mb-2">
-            <h2 className="text-2xl font-bold text-gray-900">🎯 Country Context</h2>
+            <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>Country Context</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2"
               title="Close"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -138,22 +141,24 @@ const CountrySelectionModal: React.FC<CountrySelectionModalProps> = ({
             placeholder="🔍 Search countries..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+            style={{ minHeight: '44px' }}
           />
         </div>
 
         {/* Country List */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 smooth-scroll">
           <div className="space-y-2">
             {filteredCountries.map((country) => (
               <button
                 key={country.value || 'generalized'}
                 onClick={() => setSelectedCountry(country.value)}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
+                className={`w-full text-left px-4 py-3 rounded-lg transition-all text-sm sm:text-base ${
                   selectedCountry === country.value
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
                 }`}
+                style={{ minHeight: '44px' }}
               >
                 {country.label}
               </button>
@@ -168,13 +173,15 @@ const CountrySelectionModal: React.FC<CountrySelectionModalProps> = ({
         <div className="p-4 border-t border-gray-200 flex space-x-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium rounded-lg transition-colors"
+            className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium rounded-lg transition-colors"
+            style={{ minHeight: '44px' }}
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-md hover:shadow-lg"
+            className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-md hover:shadow-lg"
+            style={{ minHeight: '44px' }}
           >
             Confirm
           </button>

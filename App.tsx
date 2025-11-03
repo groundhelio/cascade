@@ -7,6 +7,7 @@ import { generateInitialBranches, expandNode, getNodeMemory, getSeverityScores, 
 import { loadGraphState, saveGraphState } from './services/firebaseService';
 import type { GraphData, GraphNode } from './types';
 import { v4 as uuidv4 } from 'uuid';
+import { useIsMobile, useIsTablet, useIsPortrait, useBreakpoint } from './hooks/useMediaQuery';
 
 const colors = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#6366f1", "#14b8a6"];
 const responseColor = '#10b981'; // A hopeful green for responses
@@ -41,6 +42,13 @@ const App: React.FC = () => {
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
+  
+  // Responsive hooks
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+  const isPortrait = useIsPortrait();
+  const breakpoint = useBreakpoint();
   
   // Use ref to track save timeout for debouncing
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -338,6 +346,11 @@ const App: React.FC = () => {
   const handleNodeClick = useCallback(async (node: GraphNode) => {
     console.log('Node clicked:', node.id, node.label);
     setSelectedNode(node);
+    
+    // On mobile, show the panel when a node is clicked
+    if (isMobile) {
+      setIsPanelVisible(true);
+    }
 
     // Start fetching memory and severity scores in parallel
     const fetchPromises: Promise<any>[] = [];
@@ -402,10 +415,11 @@ const App: React.FC = () => {
         // Don't wait for data fetching - expand in parallel
         handleExpandNode(node);
     }
-  }, [handleExpandNode]);
+  }, [handleExpandNode, isMobile]);
 
   const handleClosePanel = () => {
     setSelectedNode(null);
+    setIsPanelVisible(false);
   };
   
   // Use selectedNode directly and sync it with graphData for updates
@@ -415,13 +429,24 @@ const App: React.FC = () => {
 
   console.log('Render - Selected node:', selectedNode?.id, 'Selected node data:', selectedNodeData?.id, 'Graph nodes:', graphData.nodes.length);
 
+  // Calculate panel width based on breakpoint
+  const getPanelWidth = () => {
+    if (isMobile) return '100vw';
+    if (isTablet) return isPortrait ? '100vw' : '360px';
+    if (breakpoint === 'desktop') return '400px';
+    return '480px'; // large-desktop
+  };
+
+  // Determine if panel should be overlay (mobile/tablet-portrait)
+  const isPanelOverlay = isMobile || (isTablet && isPortrait);
+
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-white flex">
+    <main className="relative w-screen h-screen overflow-hidden bg-white">
       {error ? (
-        <div className="absolute inset-0 bg-white flex flex-col justify-center items-center z-50 p-8 text-center">
-            <h2 className="text-3xl text-gray-900 font-bold mb-4">Application Error</h2>
-            <p className="text-xl text-red-600 mb-6">Failed to initialize the application. Please check the details below.</p>
-            <pre className="bg-gray-50 text-red-800 p-4 rounded-lg w-full max-w-2xl overflow-x-auto text-left whitespace-pre-wrap border border-gray-200">
+        <div className="absolute inset-0 bg-white flex flex-col justify-center items-center z-50 p-4 sm:p-8 text-center">
+            <h2 className="text-2xl sm:text-3xl text-gray-900 font-bold mb-4">Application Error</h2>
+            <p className="text-lg sm:text-xl text-red-600 mb-6">Failed to initialize the application. Please check the details below.</p>
+            <pre className="bg-gray-50 text-red-800 p-4 rounded-lg w-full max-w-2xl overflow-x-auto text-left whitespace-pre-wrap border border-gray-200 text-sm">
                 <code>{error}</code>
             </pre>
             <button
@@ -435,26 +460,147 @@ const App: React.FC = () => {
         <Loader text="Generating Initial Crisis..." />
       ) : (
         <>
-          {/* Left side - Graph */}
-          <div className="relative flex-1 h-screen overflow-hidden">
-            <div className="absolute top-4 left-4 z-10 p-4 bg-white bg-opacity-90 rounded-lg border border-gray-200 shadow-sm">
+          {/* Main content area with graph */}
+          <div className={`relative h-screen overflow-hidden ${isPanelOverlay ? 'w-full' : 'flex'}`}>
+            {/* Header - Compact on mobile */}
+            <div className={`absolute ${isMobile ? 'top-2 left-2' : 'top-4 left-4'} z-10 ${isMobile ? 'p-3' : 'p-4'} bg-white bg-opacity-90 rounded-lg border border-gray-200 shadow-sm`}>
               <h1 
-                className="text-3xl font-extrabold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors" 
+                className={`${isMobile ? 'text-xl' : 'text-3xl'} font-extrabold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors`}
                 onClick={() => setIsCountryModalOpen(true)}
                 title="Click to set country context"
               >
                 The Cascade
               </h1>
-              <p className="text-gray-600 max-w-md">A living graph of democracy and disruption.</p>
+              {!isMobile && (
+                <p className="text-gray-600 max-w-md">A living graph of democracy and disruption.</p>
+              )}
             </div>
             
-            <Graph 
-              data={graphData} 
-              onNodeClick={handleNodeClick} 
-              width={windowSize.width} 
-              height={windowSize.height}
-            />
+            {/* Graph - Full screen on mobile, flexible on desktop */}
+            <div className={`relative ${isPanelOverlay ? 'w-full' : 'flex-1'} h-screen overflow-hidden`}>
+              <Graph 
+                data={graphData} 
+                onNodeClick={handleNodeClick} 
+                width={windowSize.width} 
+                height={windowSize.height}
+                breakpoint={breakpoint}
+              />
+            </div>
+
+            {/* Detail Panel - Desktop side-by-side */}
+            {!isPanelOverlay && (
+              <div 
+                className="h-screen border-l-2 border-gray-300 bg-white shadow-lg overflow-y-auto smooth-scroll" 
+                style={{ 
+                  width: getPanelWidth(), 
+                  minWidth: getPanelWidth(), 
+                  maxWidth: getPanelWidth(), 
+                  flexShrink: 0 
+                }}
+              >
+                {selectedNodeData && selectedNodeData.id !== 'root' ? (
+                  <NodeDetailPanel 
+                    node={selectedNodeData} 
+                    onClose={handleClosePanel} 
+                    onExpand={handleExpandNode}
+                    onRefresh={handleRefreshNode}
+                    isExpanding={isExpanding}
+                    selectedCountry={selectedCountry}
+                    breakpoint={breakpoint}
+                  />
+                ) : (
+                  <div className="h-full flex flex-col justify-center p-8">
+                    <div className="space-y-6">
+                      <div>
+                        <h2 className="text-3xl font-bold text-gray-900 mb-2">The Cascading Effect</h2>
+                        <p className="text-lg text-gray-600">A living graph of democracy and disruption</p>
+                      </div>
+                      
+                      <div className="border-t border-gray-200 pt-6">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-3">About This Visualization</h3>
+                        <p className="text-gray-700 leading-relaxed mb-4">
+                          Explore how a single event—National Riots for Democracy—cascades through society, 
+                          creating ripples across governance, economy, security, and human wellbeing.
+                        </p>
+                        <p className="text-gray-700 leading-relaxed">
+                          Each node represents an effect or consequence. The animated arrows show the flow 
+                          of causation from root cause to cascading impacts.
+                        </p>
+                      </div>
+
+                      <div className="border-t border-gray-200 pt-6">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-3">How to Explore</h3>
+                        <ul className="space-y-3">
+                          <li className="flex items-start">
+                            <span className="text-blue-600 font-bold mr-3 mt-1">→</span>
+                            <span className="text-gray-700">
+                              <strong>Click any node</strong> to view detailed context, reflections, and severity analysis
+                            </span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="text-blue-600 font-bold mr-3 mt-1">→</span>
+                            <span className="text-gray-700">
+                              <strong>Expand nodes</strong> to reveal consequences and societal responses
+                            </span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="text-blue-600 font-bold mr-3 mt-1">→</span>
+                            <span className="text-gray-700">
+                              <strong>Zoom & pan</strong> the graph to navigate complex relationships
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                        <p className="text-blue-900 font-medium text-center">
+                          👆 Select a node to begin exploring
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Mobile/Tablet Portrait - Bottom Sheet Overlay */}
+          {isPanelOverlay && isPanelVisible && selectedNodeData && selectedNodeData.id !== 'root' && (
+            <>
+              {/* Backdrop */}
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-50 z-40 mobile-overlay"
+                onClick={handleClosePanel}
+              />
+              
+              {/* Bottom Sheet */}
+              <div 
+                className="fixed bottom-0 left-0 right-0 bg-white z-50 slide-up rounded-t-2xl shadow-2xl"
+                style={{ 
+                  height: '85vh',
+                  maxHeight: '85vh'
+                }}
+              >
+                {/* Drag handle */}
+                <div className="flex justify-center pt-3 pb-2">
+                  <div className="w-12 h-1 bg-gray-300 rounded-full" />
+                </div>
+                
+                {/* Panel content */}
+                <div className="h-full overflow-y-auto smooth-scroll pb-4">
+                  <NodeDetailPanel 
+                    node={selectedNodeData} 
+                    onClose={handleClosePanel} 
+                    onExpand={handleExpandNode}
+                    onRefresh={handleRefreshNode}
+                    isExpanding={isExpanding}
+                    selectedCountry={selectedCountry}
+                    breakpoint={breakpoint}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Country Selection Modal */}
           <CountrySelectionModal
@@ -462,72 +608,8 @@ const App: React.FC = () => {
             currentCountry={selectedCountry}
             onClose={() => setIsCountryModalOpen(false)}
             onSelect={handleCountryChange}
+            breakpoint={breakpoint}
           />
-
-          {/* Right side - Detail Panel */}
-          <div className="h-screen border-l-2 border-gray-300 bg-white shadow-lg overflow-y-auto" style={{ width: '480px', minWidth: '480px', maxWidth: '480px', flexShrink: 0 }}>
-            {selectedNodeData && selectedNodeData.id !== 'root' ? (
-              <NodeDetailPanel 
-                node={selectedNodeData} 
-                onClose={handleClosePanel} 
-                onExpand={handleExpandNode}
-                onRefresh={handleRefreshNode}
-                isExpanding={isExpanding}
-                selectedCountry={selectedCountry}
-              />
-            ) : (
-              <div className="h-full flex flex-col justify-center p-8">
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">The Cascading Effect</h2>
-                    <p className="text-lg text-gray-600">A living graph of democracy and disruption</p>
-                  </div>
-                  
-                  <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">About This Visualization</h3>
-                    <p className="text-gray-700 leading-relaxed mb-4">
-                      Explore how a single event—National Riots for Democracy—cascades through society, 
-                      creating ripples across governance, economy, security, and human wellbeing.
-                    </p>
-                    <p className="text-gray-700 leading-relaxed">
-                      Each node represents an effect or consequence. The animated arrows show the flow 
-                      of causation from root cause to cascading impacts.
-                    </p>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">How to Explore</h3>
-                    <ul className="space-y-3">
-                      <li className="flex items-start">
-                        <span className="text-blue-600 font-bold mr-3 mt-1">→</span>
-                        <span className="text-gray-700">
-                          <strong>Click any node</strong> to view detailed context, reflections, and severity analysis
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-blue-600 font-bold mr-3 mt-1">→</span>
-                        <span className="text-gray-700">
-                          <strong>Expand nodes</strong> to reveal consequences and societal responses
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="text-blue-600 font-bold mr-3 mt-1">→</span>
-                        <span className="text-gray-700">
-                          <strong>Zoom & pan</strong> the graph to navigate complex relationships
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                    <p className="text-blue-900 font-medium text-center">
-                      👆 Select a node to begin exploring
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
         </>
       )}
     </main>
