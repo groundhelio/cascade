@@ -7,9 +7,15 @@ const isMock = !API_KEY;
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Declare exported symbols and assign implementations below.
+export let generateInitialBranches: () => Promise<string[]>;
+export let expandNode: (nodeLabel: string) => Promise<{ consequences: string[]; responses: string[] }>;
+export let getNodeMemory: (nodeLabel: string) => Promise<NodeMemory>;
+export let getSeverityScores: (nodeLabel: string) => Promise<SeverityScore[]>;
+
 if (isMock) {
   // --- Mock implementations for local development ---
-  export const generateInitialBranches = async (): Promise<string[]> => {
+  generateInitialBranches = async (): Promise<string[]> => {
     await wait(300);
     return [
       "Government Crackdown",
@@ -22,7 +28,7 @@ if (isMock) {
     ];
   };
 
-  export const expandNode = async (nodeLabel: string): Promise<{ consequences: string[]; responses: string[] }> => {
+  expandNode = async (nodeLabel: string): Promise<{ consequences: string[]; responses: string[] }> => {
     await wait(300);
     return {
       consequences: [
@@ -37,7 +43,7 @@ if (isMock) {
     };
   };
 
-  export const getNodeMemory = async (nodeLabel: string): Promise<NodeMemory> => {
+  getNodeMemory = async (nodeLabel: string): Promise<NodeMemory> => {
     await wait(200);
     return {
       context: `"${nodeLabel}" often manifests as a localized but rapidly compounding disruption — affecting services, livelihoods, and the social fabric of affected communities. In many cases the initial shock reveals systemic weaknesses that magnify downstream impacts.`,
@@ -49,7 +55,7 @@ if (isMock) {
     };
   };
 
-  export const getSeverityScores = async (nodeLabel: string): Promise<SeverityScore[]> => {
+  getSeverityScores = async (nodeLabel: string): Promise<SeverityScore[]> => {
     await wait(200);
     const categories = [
       'Governance Stability',
@@ -116,7 +122,7 @@ if (isMock) {
     throw new Error('Exhausted all retries for Gemini API call.');
   };
 
-  export const generateInitialBranches = async (): Promise<string[]> => {
+  generateInitialBranches = async (): Promise<string[]> => {
     const prompt = `Based on the central event "National Riots for Democracy", identify 7 primary categories of cascading societal effects. For each category, provide one concise, impactful label for the initial effect. The categories are: Politics/Governance, Economy/Livelihoods, Social Cohesion/Security, Infrastructure/Mobility, Digital Communication, Family Life/Health, Children/Education. Return a JSON array of 7 strings, one for each category in order.`;
     const schema = {
       type: Type.ARRAY,
@@ -128,7 +134,7 @@ if (isMock) {
     return generateWithRetries<string[]>(prompt, schema);
   };
 
-  export const expandNode = async (nodeLabel: string): Promise<{ consequences: string[]; responses: string[] }> => {
+  expandNode = async (nodeLabel: string): Promise<{ consequences: string[]; responses: string[] }> => {
     const prompt = `The societal effect "${nodeLabel}" has occurred. Generate distinct and plausible cascading outcomes. Provide two categories in a JSON object: "consequences", an array of 3 direct, negative outcomes, and "responses", an array of 2 positive or adaptive societal/community responses to mitigate the effect. Each outcome should be a concise label.`;
     const schema = {
       type: Type.OBJECT,
@@ -148,7 +154,7 @@ if (isMock) {
     return generateWithRetries<{ consequences: string[]; responses: string[] }>(prompt, schema);
   };
 
-  export const getNodeMemory = async (nodeLabel: string): Promise<NodeMemory> => {
+  getNodeMemory = async (nodeLabel: string): Promise<NodeMemory> => {
     const prompt = `Analyze the societal effect: "${nodeLabel}". Provide a detailed response in JSON format. The JSON object should have two keys: "context", a single paragraph explaining what this effect entails in a real-world scenario, and "reflections", an array of 3 short, insightful sentences about the deeper, often unseen human consequences of this effect.`;
     const schema = {
       type: Type.OBJECT,
@@ -170,7 +176,7 @@ if (isMock) {
     return generateWithRetries<NodeMemory>(prompt, schema);
   };
 
-  export const getSeverityScores = async (nodeLabel: string): Promise<SeverityScore[]> => {
+  getSeverityScores = async (nodeLabel: string): Promise<SeverityScore[]> => {
     const prompt = `For the societal effect "${nodeLabel}", assess its severity on a scale of 0 (no impact) to 10 (critical impact). Provide scores for two layers: "Institutional Stress" and "Human Impact". Evaluate across these 9 domains: Governance Stability, Economic Function, Infrastructure & Mobility, Public Safety & Security, Social Cohesion, Family Stability, Child & Youth Wellbeing, Health & Humanitarian Access, and Information & Expression Freedom. Return a JSON array of objects, where each object has "category", "institutional", and "human" keys.`;
     const schema = {
       type: Type.ARRAY,
