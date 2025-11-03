@@ -349,7 +349,10 @@ const App: React.FC = () => {
             nodes: prevData.nodes.map(n => n.id === node.id ? { ...n, memory: null } : n)
         }));
         
-        const memoryPromise = getNodeMemory(node.label, [], selectedCountry)
+        // Build parent chain for context-aware memory
+        const parentChain = buildParentChain(node.id);
+        
+        const memoryPromise = getNodeMemory(node.label, parentChain, selectedCountry)
             .then(memory => {
                 setGraphData(prevData => ({
                     ...prevData,

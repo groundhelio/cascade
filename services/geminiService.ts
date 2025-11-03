@@ -312,7 +312,16 @@ IMPORTANT: Consequences must be negative (darker shades in visualization), respo
       ? ` Focus specifically on ${country}'s context, considering its unique societal, political, and economic landscape.`
       : '';
     
-    const prompt = `Analyze the societal effect: "${nodeLabel}".${countryContext} Provide a detailed response in JSON format. The JSON object should have two keys: "context", a single paragraph explaining what this effect entails in a real-world scenario, and "reflections", an array of 3 short, insightful sentences about the deeper, often unseen human consequences of this effect.`;
+    // Build cascading chain narrative
+    let chainContext = '';
+    if (parentChain.length > 0) {
+      const chainText = parentChain.join(' → ');
+      chainContext = `\n\nCASCADING CHAIN: This effect emerged from the following sequence of events:\n${chainText} → ${nodeLabel}\n\nIn the "context" field, explain how this chain of events cascaded into the current effect. Tell the story of causation in a concise, easy-to-digest paragraph that shows how one event led to another, ultimately resulting in "${nodeLabel}". Focus on the interconnected nature and cascading dynamics.`;
+    } else {
+      chainContext = `\n\nThis is a primary effect directly stemming from "National Riots for Democracy". In the "context" field, explain what this effect entails in a real-world scenario.`;
+    }
+    
+    const prompt = `Analyze the societal effect: "${nodeLabel}".${countryContext}${chainContext} Provide a detailed response in JSON format. The JSON object should have two keys: "context", a single paragraph explaining the cascading story (or the direct effect if no chain exists), and "reflections", an array of 3 short, insightful sentences about the deeper, often unseen human consequences of this effect.`;
     const schema = {
       type: Type.OBJECT,
       properties: {
