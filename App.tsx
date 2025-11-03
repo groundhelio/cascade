@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Graph from './components/Graph';
 import NodeDetailPanel from './components/NodeDetailPanel';
 import Loader from './components/Loader';
-import { generateInitialBranches, expandNode, getNodeMemory, getSeverityScores } from './services/geminiService';
+import { generateInitialBranches, expandNode, getNodeMemory, getSeverityScores, clearNodeCache } from './services/geminiService';
 import { loadGraphState, saveGraphState } from './services/firebaseService';
 import type { GraphData, GraphNode } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -199,6 +199,85 @@ const App: React.FC = () => {
     }
   }, [buildParentChain]);
 
+  const handleRefreshNode = useCallback(async (nodeToRefresh: GraphNode) => {
+    if (!nodeToRefresh.isExpanded) return;
+    
+    setIsExpanding(true);
+    try {
+      // Find all descendant nodes (children, grandchildren, etc.)
+      const getDescendants = (nodeId: string): string[] => {
+        const children = graphData.nodes.filter(n => n.parentId === nodeId);
+        const descendants = [...children.map(c => c.id)];
+        children.forEach(child => {
+          descendants.push(...getDescendants(child.id));
+        });
+        return descendants;
+      };
+      
+      const descendantIds = getDescendants(nodeToRefresh.id);
+      
+      // Remove all descendant nodes and their links
+      setGraphData(prevData => ({
+        nodes: prevData.nodes
+          .filter(n => !descendantIds.includes(n.id))
+          .map(n => n.id === nodeToRefresh.id ? {...n, isExpanded: false} : n),
+        links: prevData.links.filter(l => 
+          !descendantIds.includes(l.source) && !descendantIds.includes(l.target)
+        ),
+      }));
+      
+      // Update selected node state
+      setSelectedNode(prev => prev ? { ...prev, isExpanded: false } : null);
+      
+      // Wait a bit for UI to update, then fetch fresh data
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Build parent chain for context
+      const parentChain = buildParentChain(nodeToRefresh.id);
+      
+      // Clear cache for this node to force fresh API call
+      clearNodeCache(nodeToRefresh.label, parentChain);
+      
+      const { consequences, responses } = await expandNode(nodeToRefresh.label, parentChain);
+      
+      const consequenceNodes: GraphNode[] = consequences.map(label => ({
+        id: uuidv4(),
+        label,
+        parentId: nodeToRefresh.id,
+        depth: nodeToRefresh.depth + 1,
+        color: shadeColor(nodeToRefresh.color, -20),
+        nodeType: 'consequence',
+      }));
+
+      const responseNodes: GraphNode[] = responses.map(label => ({
+        id: uuidv4(),
+        label,
+        parentId: nodeToRefresh.id,
+        depth: nodeToRefresh.depth + 1,
+        color: responseColor,
+        nodeType: 'response',
+      }));
+
+      const newNodes = [...consequenceNodes, ...responseNodes];
+      const newLinks = newNodes.map(n => ({ source: n.parentId!, target: n.id }));
+      
+      setGraphData(prevData => ({
+        nodes: [...prevData.nodes.map(n => n.id === nodeToRefresh.id ? {...n, isExpanded: true} : n), ...newNodes],
+        links: [...prevData.links, ...newLinks],
+      }));
+      
+      // Update selected node state
+      setSelectedNode(prev => prev ? { ...prev, isExpanded: true } : null);
+      
+      console.log(`[Refresh] Refreshed node "${nodeToRefresh.label}" with new data`);
+
+    } catch (error) {
+      console.error("Failed to refresh node:", error);
+    } finally {
+      setIsExpanding(false);
+    }
+  }, [graphData.nodes, buildParentChain]);
+
   const handleNodeClick = useCallback(async (node: GraphNode) => {
     console.log('Node clicked:', node.id, node.label);
     setSelectedNode(node);
@@ -320,6 +399,7 @@ const App: React.FC = () => {
                 node={selectedNodeData} 
                 onClose={handleClosePanel} 
                 onExpand={handleExpandNode}
+                onRefresh={handleRefreshNode}
                 isExpanding={isExpanding}
               />
             ) : (

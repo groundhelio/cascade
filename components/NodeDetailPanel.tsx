@@ -6,10 +6,11 @@ interface NodeDetailPanelProps {
   node: GraphNode | null;
   onClose: () => void;
   onExpand: (node: GraphNode) => void;
+  onRefresh: (node: GraphNode) => void;
   isExpanding: boolean;
 }
 
-const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpand, isExpanding }) => {
+const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpand, onRefresh, isExpanding }) => {
   const [showColorLegend, setShowColorLegend] = React.useState(false);
   
   if (!node) return null;
@@ -68,7 +69,8 @@ const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpa
         </div>
       )}
 
-      <div className="mt-8">
+      <div className="mt-8 space-y-3">
+        {/* Expand Button */}
         <button
           onClick={() => onExpand(node)}
           disabled={node.isExpanded || isExpanding || node.depth >= maxDepth}
@@ -76,6 +78,21 @@ const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpa
         >
           {isExpanding ? 'Expanding...' : (node.isExpanded ? 'Effects Expanded' : (node.depth >= maxDepth ? 'Max Depth Reached' : 'Expand Effects'))}
         </button>
+        
+        {/* Refresh Button - Only show if node is expanded */}
+        {node.isExpanded && (
+          <button
+            onClick={() => onRefresh(node)}
+            disabled={isExpanding}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 flex items-center justify-center space-x-2"
+            title="Remove children and generate fresh data"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>{isExpanding ? 'Refreshing...' : 'Refresh Node Effects'}</span>
+          </button>
+        )}
       </div>
 
       {/* Color Legend Footer */}

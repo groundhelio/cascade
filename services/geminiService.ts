@@ -39,6 +39,13 @@ export let expandNode: (nodeLabel: string, parentChain?: string[]) => Promise<{ 
 export let getNodeMemory: (nodeLabel: string, parentChain?: string[]) => Promise<NodeMemory>;
 export let getSeverityScores: (nodeLabel: string, parentChain?: string[]) => Promise<SeverityScore[]>;
 
+// Export function to clear cache for a specific node (used for refresh)
+export const clearNodeCache = (nodeLabel: string, parentChain: string[] = []): void => {
+  const cacheKey = parentChain.length > 0 ? `${nodeLabel}|${parentChain.join('>')}` : nodeLabel;
+  expandCache.delete(cacheKey);
+  console.log(`[Cache] Cleared cache for: ${cacheKey}`);
+};
+
 if (isMock) {
   // --- Mock implementations for local development ---
   generateInitialBranches = async (): Promise<string[]> => {
