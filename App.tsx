@@ -78,8 +78,8 @@ const App: React.FC = () => {
 
         setGraphData({ nodes: newNodes, links: newLinks });
         
-        // Set root node as default selection
-        setSelectedNode(rootNode);
+        // Don't auto-select root - let info panel show first
+        // setSelectedNode(rootNode);
       } catch (err) {
         console.error("Failed to initialize graph:", err);
         setError(err instanceof Error ? err.message : "An unknown error occurred during initialization.");
@@ -191,7 +191,7 @@ const App: React.FC = () => {
     ? graphData.nodes.find(n => n.id === selectedNode.id) || selectedNode
     : null;
 
-  console.log('Selected node:', selectedNode?.id, 'Selected node data:', selectedNodeData?.id);
+  console.log('Render - Selected node:', selectedNode?.id, 'Selected node data:', selectedNodeData?.id, 'Graph nodes:', graphData.nodes.length);
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-white flex">
@@ -217,7 +217,7 @@ const App: React.FC = () => {
           <div className="relative flex-1 h-screen overflow-hidden">
             <div className="absolute top-4 left-4 z-10 p-4 bg-white bg-opacity-90 rounded-lg border border-gray-200 shadow-sm">
               <h1 className="text-3xl font-extrabold text-gray-900">
-                The Cascading Effect
+                The Cascade
               </h1>
               <p className="text-gray-600 max-w-md">A living graph of democracy and disruption.</p>
             </div>
@@ -231,8 +231,8 @@ const App: React.FC = () => {
           </div>
 
           {/* Right side - Detail Panel */}
-          <div className="h-screen border-l-2 border-gray-300 bg-white shadow-lg" style={{ width: '480px', minWidth: '480px', maxWidth: '480px', flexShrink: 0 }}>
-            {selectedNodeData ? (
+          <div className="h-screen border-l-2 border-gray-300 bg-white shadow-lg overflow-y-auto" style={{ width: '480px', minWidth: '480px', maxWidth: '480px', flexShrink: 0 }}>
+            {selectedNodeData && selectedNodeData.id !== 'root' ? (
               <NodeDetailPanel 
                 node={selectedNodeData} 
                 onClose={handleClosePanel} 
@@ -240,10 +240,54 @@ const App: React.FC = () => {
                 isExpanding={isExpanding}
               />
             ) : (
-              <div className="h-full flex items-center justify-center p-6 text-center">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">The Cascading Effect</h2>
-                  <p className="text-gray-600">Click on any node to view its details and explore cascading effects.</p>
+              <div className="h-full flex flex-col justify-center p-8">
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">The Cascading Effect</h2>
+                    <p className="text-lg text-gray-600">A living graph of democracy and disruption</p>
+                  </div>
+                  
+                  <div className="border-t border-gray-200 pt-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">About This Visualization</h3>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Explore how a single event—National Riots for Democracy—cascades through society, 
+                      creating ripples across governance, economy, security, and human wellbeing.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed">
+                      Each node represents an effect or consequence. The animated arrows show the flow 
+                      of causation from root cause to cascading impacts.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">How to Explore</h3>
+                    <ul className="space-y-3">
+                      <li className="flex items-start">
+                        <span className="text-blue-600 font-bold mr-3 mt-1">→</span>
+                        <span className="text-gray-700">
+                          <strong>Click any node</strong> to view detailed context, reflections, and severity analysis
+                        </span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-blue-600 font-bold mr-3 mt-1">→</span>
+                        <span className="text-gray-700">
+                          <strong>Expand nodes</strong> to reveal consequences and societal responses
+                        </span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-blue-600 font-bold mr-3 mt-1">→</span>
+                        <span className="text-gray-700">
+                          <strong>Zoom & pan</strong> the graph to navigate complex relationships
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                    <p className="text-blue-900 font-medium text-center">
+                      👆 Select a node to begin exploring
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
