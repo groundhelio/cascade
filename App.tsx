@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Graph from './components/Graph';
 import NodeDetailPanel from './components/NodeDetailPanel';
 import Loader from './components/Loader';
 import { generateInitialBranches, expandNode, getNodeMemory, getSeverityScores } from './services/geminiService';
+import { loadGraphState, saveGraphState } from './services/firebaseService';
 import type { GraphData, GraphNode } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -37,6 +38,9 @@ const App: React.FC = () => {
   const [isExpanding, setIsExpanding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  
+  // Use ref to track save timeout for debouncing
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -49,6 +53,19 @@ const App: React.FC = () => {
   useEffect(() => {
     const initializeGraph = async () => {
       try {
+        // Try to load graph state from Firebase first
+        console.log('[App] Attempting to load graph state from Firebase...');
+        const cachedGraphState = await loadGraphState();
+        
+        if (cachedGraphState && cachedGraphState.nodes.length > 0) {
+          console.log('[App] Loaded graph state from Firebase');
+          setGraphData(cachedGraphState);
+          setIsLoading(false);
+          return;
+        }
+        
+        // If no cached state, initialize from API
+        console.log('[App] No cached state, initializing from API...');
         const rootNode: GraphNode = {
           id: 'root',
           label: 'National Riots for Democracy',
@@ -76,7 +93,11 @@ const App: React.FC = () => {
           .filter(n => n.parentId)
           .map(n => ({ source: n.parentId!, target: n.id }));
 
-        setGraphData({ nodes: newNodes, links: newLinks });
+        const newGraphData = { nodes: newNodes, links: newLinks };
+        setGraphData(newGraphData);
+        
+        // Save initial state to Firebase
+        saveGraphState(newGraphData).catch(console.error);
         
         // Don't auto-select root - let info panel show first
         // setSelectedNode(rootNode);
@@ -90,6 +111,32 @@ const App: React.FC = () => {
 
     initializeGraph();
   }, []);
+
+  // Debounced save to Firebase whenever graph data changes
+  useEffect(() => {
+    // Skip saving during initial load
+    if (isLoading) return;
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set new timeout to save after 2 seconds of inactivity
+    saveTimeoutRef.current = setTimeout(() => {
+      if (graphData.nodes.length > 0) {
+        console.log('[App] Saving graph state to Firebase (debounced)...');
+        saveGraphState(graphData).catch(console.error);
+      }
+    }, 2000);
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [graphData, isLoading]);
 
   // Helper function to build the parent chain for a node
   const buildParentChain = useCallback((nodeId: string): string[] => {

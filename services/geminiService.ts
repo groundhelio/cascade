@@ -1,10 +1,31 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { NodeMemory, SeverityScore } from '../types';
+import { loadCacheFromFirebase, saveToCacheFirebase } from './firebaseService';
 
 // Cache for API responses
-const memoryCache = new Map<string, NodeMemory>();
-const severityCache = new Map<string, SeverityScore[]>();
-const expandCache = new Map<string, { consequences: string[]; responses: string[] }>();
+let memoryCache = new Map<string, NodeMemory>();
+let severityCache = new Map<string, SeverityScore[]>();
+let expandCache = new Map<string, { consequences: string[]; responses: string[] }>();
+
+// Load caches from Firebase on module initialization
+let cachesLoaded = false;
+const loadCachesOnce = async () => {
+  if (!cachesLoaded) {
+    cachesLoaded = true;
+    try {
+      const caches = await loadCacheFromFirebase();
+      memoryCache = caches.memory;
+      severityCache = caches.severity;
+      expandCache = caches.expand;
+      console.log('[Cache] Loaded from Firebase');
+    } catch (error) {
+      console.error('[Cache] Error loading from Firebase:', error);
+    }
+  }
+};
+
+// Initialize cache loading (non-blocking)
+loadCachesOnce().catch(console.error);
 
 // If no API key is provided (common during local dev), fall back to deterministic mocks
 const API_KEY = (process.env as any).API_KEY as string | undefined;
@@ -57,6 +78,8 @@ if (isMock) {
     
     // Cache the result
     expandCache.set(cacheKey, result);
+    // Save to Firebase (non-blocking)
+    saveToCacheFirebase('expand', cacheKey, result).catch(console.error);
     return result;
   };
 
@@ -79,6 +102,8 @@ if (isMock) {
     
     // Cache the result
     memoryCache.set(nodeLabel, result);
+    // Save to Firebase (non-blocking)
+    saveToCacheFirebase('memory', nodeLabel, result).catch(console.error);
     return result;
   };
 
@@ -105,6 +130,8 @@ if (isMock) {
     
     // Cache the result
     severityCache.set(nodeLabel, result);
+    // Save to Firebase (non-blocking)
+    saveToCacheFirebase('severity', nodeLabel, result).catch(console.error);
     return result;
   };
 
@@ -217,6 +244,8 @@ Each outcome should be a concise, specific label (not generic) that shows clear 
     
     // Cache the result
     expandCache.set(cacheKey, result);
+    // Save to Firebase (non-blocking)
+    saveToCacheFirebase('expand', cacheKey, result).catch(console.error);
     return result;
   };
 
@@ -250,6 +279,8 @@ Each outcome should be a concise, specific label (not generic) that shows clear 
     
     // Cache the result
     memoryCache.set(nodeLabel, result);
+    // Save to Firebase (non-blocking)
+    saveToCacheFirebase('memory', nodeLabel, result).catch(console.error);
     return result;
   };
 
@@ -278,6 +309,8 @@ Each outcome should be a concise, specific label (not generic) that shows clear 
     
     // Cache the result
     severityCache.set(nodeLabel, result);
+    // Save to Firebase (non-blocking)
+    saveToCacheFirebase('severity', nodeLabel, result).catch(console.error);
     return result;
   };
 
