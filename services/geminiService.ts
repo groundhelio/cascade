@@ -44,13 +44,13 @@ if (isMock) {
   generateInitialBranches = async (): Promise<string[]> => {
     await wait(300);
     return [
-      "Government Crackdown",
-      "Economic Disruption",
-      "Community Polarization",
-      "Transport Shutdowns",
-      "Online Misinformation Spread",
-      "Public Health Strain",
-      "School Closures"
+      "Government Response Measures",
+      "Economic Disruption Waves",
+      "Social Cohesion Challenges",
+      "Infrastructure Strain",
+      "Information Ecosystem Changes",
+      "Public Health Impact",
+      "Educational System Disruption"
     ];
   };
 
@@ -66,13 +66,13 @@ if (isMock) {
     const chainContext = parentChain.length > 0 ? ` (Following: ${parentChain.join(' → ')})` : '';
     const result = {
       consequences: [
-        `${nodeLabel}${chainContext} — Supply chain interruptions`,
-        `${nodeLabel}${chainContext} — Local business collapse`,
-        `${nodeLabel}${chainContext} — Increased civil unrest`
+        `Critical Supply Chain Breakdown ${chainContext}`,
+        `Mass Unemployment Crisis ${chainContext}`,
+        `Escalating Social Unrest ${chainContext}`
       ],
       responses: [
-        `${nodeLabel}${chainContext} — Community-led relief efforts`,
-        `${nodeLabel}${chainContext} — Policy interventions and emergency funds`
+        `Emergency Relief Programs ${chainContext}`,
+        `Community Solidarity Networks ${chainContext}`
       ]
     };
     
@@ -185,12 +185,25 @@ if (isMock) {
   };
 
   generateInitialBranches = async (): Promise<string[]> => {
-    const prompt = `Based on the central event "National Riots for Democracy", identify 7 primary categories of cascading societal effects. For each category, provide one concise, impactful label for the initial effect. The categories are: Politics/Governance, Economy/Livelihoods, Social Cohesion/Security, Infrastructure/Mobility, Digital Communication, Family Life/Health, Children/Education. Return a JSON array of 7 strings, one for each category in order.`;
+    const prompt = `Based on the central event "National Riots for Democracy", identify 7 primary categories of cascading societal effects. 
+
+For each category, provide one concise, impactful label for the initial effect. These should be NEUTRAL or MIXED in tone (not inherently positive or negative), as they represent the first-level impacts that can lead to both consequences and responses.
+
+The categories are: 
+1. Politics/Governance
+2. Economy/Livelihoods
+3. Social Cohesion/Security
+4. Infrastructure/Mobility
+5. Digital Communication
+6. Family Life/Health
+7. Children/Education
+
+Return a JSON array of 7 strings, one for each category in order. Each should describe the initial societal impact or change in that domain.`;
     const schema = {
       type: Type.ARRAY,
       items: {
         type: Type.STRING,
-        description: 'A concise label for a primary societal effect.',
+        description: 'A concise, neutral label for a primary societal effect in this category.',
       },
     };
     return generateWithRetries<string[]>(prompt, schema);
@@ -219,25 +232,38 @@ Based on this specific cascading chain, identify what "${nodeLabel}" would direc
 Analyze what "${nodeLabel}" would directly cause next in the cascading effect chain. Consider the cumulative impact of the preceding events.
 
 Generate distinct and plausible direct outcomes. Provide two categories in a JSON object:
-- "consequences": an array of 3 direct, negative outcomes that "${nodeLabel}" specifically causes
-- "responses": an array of 2 positive or adaptive societal/community responses to mitigate "${nodeLabel}"
 
-Each outcome should be a concise, specific label (not generic) that shows clear causation from "${nodeLabel}".`;
+**CONSEQUENCES (Negative/Harmful)**: 
+- Must be 3 direct NEGATIVE, HARMFUL, or DETERIORATING outcomes
+- These represent problems that WORSEN, COMPOUND, or create NEW HARM
+- Should reflect disruption, damage, suffering, or systemic breakdown
+- Examples: "Mass Unemployment", "Health System Collapse", "Increased Crime Rates"
+
+**RESPONSES (Positive/Adaptive)**:
+- Must be 2 POSITIVE, HOPEFUL, or CONSTRUCTIVE societal responses
+- These represent interventions, support, resilience, or recovery efforts
+- Should reflect community action, policy fixes, aid programs, or rebuilding
+- Examples: "Emergency Relief Programs", "Community Solidarity Networks", "Policy Reform Initiatives"
+
+Each outcome should be a concise, specific label that shows clear causation from "${nodeLabel}".
+
+IMPORTANT: Consequences must be negative (darker shades in visualization), responses must be positive (green color in visualization).`;
     
     const schema = {
       type: Type.OBJECT,
       properties: {
         consequences: {
           type: Type.ARRAY,
-          description: 'An array of 3 direct, negative outcomes caused by this specific effect.',
+          description: 'An array of 3 NEGATIVE, HARMFUL, or DETERIORATING outcomes that worsen the situation.',
           items: { type: Type.STRING },
         },
         responses: {
           type: Type.ARRAY,
-          description: 'An array of 2 positive or adaptive societal responses to this specific effect.',
+          description: 'An array of 2 POSITIVE, HOPEFUL, or CONSTRUCTIVE interventions that help or heal.',
           items: { type: Type.STRING },
         },
       },
+      required: ['consequences', 'responses'],
     };
     
     const result = await generateWithRetries<{ consequences: string[]; responses: string[] }>(prompt, schema);
