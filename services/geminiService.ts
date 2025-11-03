@@ -1,6 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { NodeMemory, SeverityScore } from '../types';
 
+// Cache for API responses
+const memoryCache = new Map<string, NodeMemory>();
+const severityCache = new Map<string, SeverityScore[]>();
+const expandCache = new Map<string, { consequences: string[]; responses: string[] }>();
+
 // If no API key is provided (common during local dev), fall back to deterministic mocks
 const API_KEY = (process.env as any).API_KEY as string | undefined;
 const isMock = !API_KEY;
@@ -29,8 +34,14 @@ if (isMock) {
   };
 
   expandNode = async (nodeLabel: string): Promise<{ consequences: string[]; responses: string[] }> => {
+    // Check cache first
+    if (expandCache.has(nodeLabel)) {
+      console.log(`[Cache Hit] expandNode: ${nodeLabel}`);
+      return expandCache.get(nodeLabel)!;
+    }
+    
     await wait(300);
-    return {
+    const result = {
       consequences: [
         `${nodeLabel} — Supply chain interruptions`,
         `${nodeLabel} — Local business collapse`,
@@ -41,11 +52,21 @@ if (isMock) {
         `${nodeLabel} — Policy interventions and emergency funds`
       ]
     };
+    
+    // Cache the result
+    expandCache.set(nodeLabel, result);
+    return result;
   };
 
   getNodeMemory = async (nodeLabel: string): Promise<NodeMemory> => {
+    // Check cache first
+    if (memoryCache.has(nodeLabel)) {
+      console.log(`[Cache Hit] getNodeMemory: ${nodeLabel}`);
+      return memoryCache.get(nodeLabel)!;
+    }
+    
     await wait(200);
-    return {
+    const result = {
       context: `"${nodeLabel}" often manifests as a localized but rapidly compounding disruption — affecting services, livelihoods, and the social fabric of affected communities. In many cases the initial shock reveals systemic weaknesses that magnify downstream impacts.`,
       reflections: [
         `Individuals often experience prolonged economic and psychological harm beyond the immediate event.`,
@@ -53,24 +74,36 @@ if (isMock) {
         `Children and other vulnerable groups typically face the longest recovery timelines.`
       ]
     };
+    
+    // Cache the result
+    memoryCache.set(nodeLabel, result);
+    return result;
   };
 
   getSeverityScores = async (nodeLabel: string): Promise<SeverityScore[]> => {
+    // Check cache first
+    if (severityCache.has(nodeLabel)) {
+      console.log(`[Cache Hit] getSeverityScores: ${nodeLabel}`);
+      return severityCache.get(nodeLabel)!;
+    }
+    
     await wait(200);
     const categories = [
-      'Governance Stability',
-      'Economic Function',
-      'Infrastructure & Mobility',
-      'Public Safety & Security',
-      'Social Cohesion',
-      'Family Stability',
-      'Child & Youth Wellbeing',
-      'Health & Humanitarian Access',
-      'Information & Expression Freedom'
+      'Governance',
+      'Economy',
+      'Infrastructure',
+      'Security',
+      'Society',
+      'Family & Youth'
     ];
+
     // deterministic pseudo-scores based on label length
     const base = Math.min(8, Math.max(2, Math.floor(nodeLabel.length % 10)));
-    return categories.map((c, i) => ({ category: c, institutional: Math.max(0, Math.min(10, base + (i % 3) - 1)), human: Math.max(0, Math.min(10, base + ((i + 1) % 4) - 2)) }));
+    const result = categories.map((c, i) => ({ category: c, institutional: Math.max(0, Math.min(10, base + (i % 3) - 1)), human: Math.max(0, Math.min(10, base + ((i + 1) % 4) - 2)) }));
+    
+    // Cache the result
+    severityCache.set(nodeLabel, result);
+    return result;
   };
 
 } else {
@@ -135,6 +168,12 @@ if (isMock) {
   };
 
   expandNode = async (nodeLabel: string): Promise<{ consequences: string[]; responses: string[] }> => {
+    // Check cache first
+    if (expandCache.has(nodeLabel)) {
+      console.log(`[Cache Hit] expandNode: ${nodeLabel}`);
+      return expandCache.get(nodeLabel)!;
+    }
+    
     const prompt = `The societal effect "${nodeLabel}" has occurred. Generate distinct and plausible cascading outcomes. Provide two categories in a JSON object: "consequences", an array of 3 direct, negative outcomes, and "responses", an array of 2 positive or adaptive societal/community responses to mitigate the effect. Each outcome should be a concise label.`;
     const schema = {
       type: Type.OBJECT,
@@ -151,10 +190,21 @@ if (isMock) {
         },
       },
     };
-    return generateWithRetries<{ consequences: string[]; responses: string[] }>(prompt, schema);
+    
+    const result = await generateWithRetries<{ consequences: string[]; responses: string[] }>(prompt, schema);
+    
+    // Cache the result
+    expandCache.set(nodeLabel, result);
+    return result;
   };
 
   getNodeMemory = async (nodeLabel: string): Promise<NodeMemory> => {
+    // Check cache first
+    if (memoryCache.has(nodeLabel)) {
+      console.log(`[Cache Hit] getNodeMemory: ${nodeLabel}`);
+      return memoryCache.get(nodeLabel)!;
+    }
+    
     const prompt = `Analyze the societal effect: "${nodeLabel}". Provide a detailed response in JSON format. The JSON object should have two keys: "context", a single paragraph explaining what this effect entails in a real-world scenario, and "reflections", an array of 3 short, insightful sentences about the deeper, often unseen human consequences of this effect.`;
     const schema = {
       type: Type.OBJECT,
@@ -173,10 +223,21 @@ if (isMock) {
         },
       },
     };
-    return generateWithRetries<NodeMemory>(prompt, schema);
+    
+    const result = await generateWithRetries<NodeMemory>(prompt, schema);
+    
+    // Cache the result
+    memoryCache.set(nodeLabel, result);
+    return result;
   };
 
   getSeverityScores = async (nodeLabel: string): Promise<SeverityScore[]> => {
+    // Check cache first
+    if (severityCache.has(nodeLabel)) {
+      console.log(`[Cache Hit] getSeverityScores: ${nodeLabel}`);
+      return severityCache.get(nodeLabel)!;
+    }
+    
     const prompt = `For the societal effect "${nodeLabel}", assess its severity on a scale of 0 (no impact) to 10 (critical impact). Provide scores for two layers: "Institutional Stress" and "Human Impact". Evaluate across these 9 domains: Governance Stability, Economic Function, Infrastructure & Mobility, Public Safety & Security, Social Cohesion, Family Stability, Child & Youth Wellbeing, Health & Humanitarian Access, and Information & Expression Freedom. Return a JSON array of objects, where each object has "category", "institutional", and "human" keys.`;
     const schema = {
       type: Type.ARRAY,
@@ -190,7 +251,12 @@ if (isMock) {
         required: ['category', 'institutional', 'human'],
       },
     };
-    return generateWithRetries<SeverityScore[]>(prompt, schema);
+    
+    const result = await generateWithRetries<SeverityScore[]>(prompt, schema);
+    
+    // Cache the result
+    severityCache.set(nodeLabel, result);
+    return result;
   };
 
 }
