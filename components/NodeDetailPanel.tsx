@@ -10,9 +10,11 @@ interface NodeDetailPanelProps {
 }
 
 const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpand, isExpanding }) => {
+  const [showColorLegend, setShowColorLegend] = React.useState(false);
+  
   if (!node) return null;
 
-  const maxDepth = 30;
+  const maxDepth = 50;
 
   return (
     <div className="h-full w-full bg-white p-6 flex flex-col overflow-y-auto">
@@ -74,6 +76,97 @@ const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpa
         >
           {isExpanding ? 'Expanding...' : (node.isExpanded ? 'Effects Expanded' : (node.depth >= maxDepth ? 'Max Depth Reached' : 'Expand Effects'))}
         </button>
+      </div>
+
+      {/* Color Legend Footer */}
+      <div className="mt-6 border-t border-gray-200 pt-4">
+        <button
+          onClick={() => setShowColorLegend(!showColorLegend)}
+          className="w-full flex items-center justify-between text-sm text-gray-600 hover:text-gray-900 transition-colors py-2"
+        >
+          <span className="font-medium">Color Legend</span>
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className={`h-5 w-5 transition-transform duration-200 ${showColorLegend ? 'rotate-180' : ''}`}
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {showColorLegend && (
+          <div className="mt-3 space-y-3 text-sm">
+            <div className="flex items-center space-x-3">
+              <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#e11d48' }}></div>
+              <div className="flex-1">
+                <div className="font-medium text-gray-900">Root Node</div>
+                <div className="text-gray-500 text-xs">#e11d48</div>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+              <div className="flex-1">
+                <div className="font-medium text-gray-900">Primary Effects</div>
+                <div className="text-gray-500 text-xs">7 category colors</div>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <div className="w-6 h-6 rounded-full opacity-80 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600"></div>
+              <div className="flex-1">
+                <div className="font-medium text-gray-900">Consequences</div>
+                <div className="text-gray-500 text-xs">Darker shade of parent</div>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
+              <div className="flex-1">
+                <div className="font-medium text-gray-900">Responses</div>
+                <div className="text-gray-500 text-xs">#10b981 (Hopeful green)</div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-gray-100">
+              <div className="text-xs text-gray-500">
+                <strong>Primary Effect Colors:</strong>
+                <div className="grid grid-cols-2 gap-1 mt-1">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
+                    <span>#3b82f6</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#8b5cf6' }}></div>
+                    <span>#8b5cf6</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ec4899' }}></div>
+                    <span>#ec4899</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }}></div>
+                    <span>#f59e0b</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></div>
+                    <span>#10b981</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#6366f1' }}></div>
+                    <span>#6366f1</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#14b8a6' }}></div>
+                    <span>#14b8a6</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
