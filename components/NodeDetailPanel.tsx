@@ -12,7 +12,7 @@ interface NodeDetailPanelProps {
 const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpand, isExpanding }) => {
   if (!node) return null;
 
-  const maxDepth = 4;
+  const maxDepth = 30;
 
   return (
     <div className="h-full w-full bg-white p-6 flex flex-col overflow-y-auto">

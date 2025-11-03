@@ -92,7 +92,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleExpandNode = useCallback(async (nodeToExpand: GraphNode) => {
-    if (nodeToExpand.isExpanded || nodeToExpand.depth >= 4) return;
+    if (nodeToExpand.isExpanded || nodeToExpand.depth >= 30) return;
     
     setIsExpanding(true);
     try {
@@ -193,7 +193,7 @@ const App: React.FC = () => {
     }
 
     // Auto-expand the node if not already expanded and not at max depth
-    if (!node.isExpanded && node.depth < 4) {
+    if (!node.isExpanded && node.depth < 30) {
         // Don't wait for data fetching - expand in parallel
         handleExpandNode(node);
     }
