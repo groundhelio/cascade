@@ -184,15 +184,12 @@ const App: React.FC = () => {
   
   const selectedNodeData = graphData.nodes.find(n => n.id === selectedNode?.id) || null;
 
+  // Calculate dimensions for the split layout
+  const rightPanelWidth = 480; // Fixed width for the right panel
+  const graphWidth = selectedNodeData ? windowSize.width - rightPanelWidth : windowSize.width;
+
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-white">
-       <div className="absolute top-4 left-4 z-10 p-4 bg-white bg-opacity-90 rounded-lg border border-gray-200 shadow-sm">
-        <h1 className="text-3xl font-extrabold text-gray-900">
-          The Cascading Effect
-        </h1>
-        <p className="text-gray-600 max-w-md">A living graph of democracy and disruption.</p>
-      </div>
-      
+    <main className="relative w-screen h-screen overflow-hidden bg-white flex">
       {error ? (
         <div className="absolute inset-0 bg-white flex flex-col justify-center items-center z-50 p-8 text-center">
             <h2 className="text-3xl text-gray-900 font-bold mb-4">Application Error</h2>
@@ -210,21 +207,36 @@ const App: React.FC = () => {
       ) : isLoading ? (
         <Loader text="Generating Initial Crisis..." />
       ) : (
-        <Graph 
-            data={graphData} 
-            onNodeClick={handleNodeClick} 
-            width={windowSize.width} 
-            height={windowSize.height}
-        />
-      )}
-      
-      {selectedNodeData && (
-         <NodeDetailPanel 
-            node={selectedNodeData} 
-            onClose={handleClosePanel} 
-            onExpand={handleExpandNode}
-            isExpanding={isExpanding}
-         />
+        <>
+          {/* Left side - Graph */}
+          <div className="relative flex-1 h-screen" style={{ width: graphWidth }}>
+            <div className="absolute top-4 left-4 z-10 p-4 bg-white bg-opacity-90 rounded-lg border border-gray-200 shadow-sm">
+              <h1 className="text-3xl font-extrabold text-gray-900">
+                The Cascading Effect
+              </h1>
+              <p className="text-gray-600 max-w-md">A living graph of democracy and disruption.</p>
+            </div>
+            
+            <Graph 
+              data={graphData} 
+              onNodeClick={handleNodeClick} 
+              width={graphWidth} 
+              height={windowSize.height}
+            />
+          </div>
+
+          {/* Right side - Detail Panel */}
+          {selectedNodeData && (
+            <div className="h-screen border-l border-gray-200 bg-white" style={{ width: rightPanelWidth }}>
+              <NodeDetailPanel 
+                node={selectedNodeData} 
+                onClose={handleClosePanel} 
+                onExpand={handleExpandNode}
+                isExpanding={isExpanding}
+              />
+            </div>
+          )}
+        </>
       )}
     </main>
   );

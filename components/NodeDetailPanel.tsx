@@ -15,10 +15,14 @@ const NodeDetailPanel: React.FC<NodeDetailPanelProps> = ({ node, onClose, onExpa
   const maxDepth = 4;
 
   return (
-    <div className="absolute top-0 right-0 h-full w-full md:w-1/3 max-w-lg bg-white border-l border-gray-200 shadow-lg p-6 flex flex-col transition-transform transform translate-x-0 duration-500 ease-in-out z-10 overflow-y-auto">
+    <div className="h-full w-full bg-white p-6 flex flex-col overflow-y-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">{node.label}</h2>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-900 transition-colors">
+        <button 
+          onClick={onClose} 
+          className="text-gray-500 hover:text-gray-900 transition-colors flex-shrink-0 ml-2"
+          title="Close panel"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
