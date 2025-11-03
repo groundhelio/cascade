@@ -91,12 +91,31 @@ const App: React.FC = () => {
     initializeGraph();
   }, []);
 
+  // Helper function to build the parent chain for a node
+  const buildParentChain = useCallback((nodeId: string): string[] => {
+    const chain: string[] = [];
+    let currentId = nodeId;
+    
+    // Walk up the tree to build the chain
+    while (currentId) {
+      const currentNode = graphData.nodes.find(n => n.id === currentId);
+      if (!currentNode || currentId === 'root') break;
+      
+      chain.unshift(currentNode.label); // Add to beginning
+      currentId = currentNode.parentId || '';
+    }
+    
+    return chain;
+  }, [graphData.nodes]);
+
   const handleExpandNode = useCallback(async (nodeToExpand: GraphNode) => {
     if (nodeToExpand.isExpanded || nodeToExpand.depth >= 30) return;
     
     setIsExpanding(true);
     try {
-      const { consequences, responses } = await expandNode(nodeToExpand.label);
+      // Build parent chain for context
+      const parentChain = buildParentChain(nodeToExpand.id);
+      const { consequences, responses } = await expandNode(nodeToExpand.label, parentChain);
       
       const consequenceNodes: GraphNode[] = consequences.map(label => ({
         id: uuidv4(),
@@ -131,7 +150,7 @@ const App: React.FC = () => {
     } finally {
         setIsExpanding(false);
     }
-  }, []);
+  }, [buildParentChain]);
 
   const handleNodeClick = useCallback(async (node: GraphNode) => {
     console.log('Node clicked:', node.id, node.label);

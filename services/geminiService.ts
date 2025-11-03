@@ -14,9 +14,9 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Declare exported symbols and assign implementations below.
 export let generateInitialBranches: () => Promise<string[]>;
-export let expandNode: (nodeLabel: string) => Promise<{ consequences: string[]; responses: string[] }>;
-export let getNodeMemory: (nodeLabel: string) => Promise<NodeMemory>;
-export let getSeverityScores: (nodeLabel: string) => Promise<SeverityScore[]>;
+export let expandNode: (nodeLabel: string, parentChain?: string[]) => Promise<{ consequences: string[]; responses: string[] }>;
+export let getNodeMemory: (nodeLabel: string, parentChain?: string[]) => Promise<NodeMemory>;
+export let getSeverityScores: (nodeLabel: string, parentChain?: string[]) => Promise<SeverityScore[]>;
 
 if (isMock) {
   // --- Mock implementations for local development ---
@@ -33,28 +33,30 @@ if (isMock) {
     ];
   };
 
-  expandNode = async (nodeLabel: string): Promise<{ consequences: string[]; responses: string[] }> => {
-    // Check cache first
-    if (expandCache.has(nodeLabel)) {
+  expandNode = async (nodeLabel: string, parentChain: string[] = []): Promise<{ consequences: string[]; responses: string[] }> => {
+    // Check cache first (cache key includes the chain for context-specific results)
+    const cacheKey = parentChain.length > 0 ? `${nodeLabel}|${parentChain.join('>')}` : nodeLabel;
+    if (expandCache.has(cacheKey)) {
       console.log(`[Cache Hit] expandNode: ${nodeLabel}`);
-      return expandCache.get(nodeLabel)!;
+      return expandCache.get(cacheKey)!;
     }
     
     await wait(300);
+    const chainContext = parentChain.length > 0 ? ` (Following: ${parentChain.join(' → ')})` : '';
     const result = {
       consequences: [
-        `${nodeLabel} — Supply chain interruptions`,
-        `${nodeLabel} — Local business collapse`,
-        `${nodeLabel} — Increased civil unrest`
+        `${nodeLabel}${chainContext} — Supply chain interruptions`,
+        `${nodeLabel}${chainContext} — Local business collapse`,
+        `${nodeLabel}${chainContext} — Increased civil unrest`
       ],
       responses: [
-        `${nodeLabel} — Community-led relief efforts`,
-        `${nodeLabel} — Policy interventions and emergency funds`
+        `${nodeLabel}${chainContext} — Community-led relief efforts`,
+        `${nodeLabel}${chainContext} — Policy interventions and emergency funds`
       ]
     };
     
     // Cache the result
-    expandCache.set(nodeLabel, result);
+    expandCache.set(cacheKey, result);
     return result;
   };
 
@@ -167,25 +169,45 @@ if (isMock) {
     return generateWithRetries<string[]>(prompt, schema);
   };
 
-  expandNode = async (nodeLabel: string): Promise<{ consequences: string[]; responses: string[] }> => {
-    // Check cache first
-    if (expandCache.has(nodeLabel)) {
+  expandNode = async (nodeLabel: string, parentChain: string[] = []): Promise<{ consequences: string[]; responses: string[] }> => {
+    // Check cache first (cache key includes the chain for context-specific results)
+    const cacheKey = parentChain.length > 0 ? `${nodeLabel}|${parentChain.join('>')}` : nodeLabel;
+    if (expandCache.has(cacheKey)) {
       console.log(`[Cache Hit] expandNode: ${nodeLabel}`);
-      return expandCache.get(nodeLabel)!;
+      return expandCache.get(cacheKey)!;
     }
     
-    const prompt = `The societal effect "${nodeLabel}" has occurred. Generate distinct and plausible cascading outcomes. Provide two categories in a JSON object: "consequences", an array of 3 direct, negative outcomes, and "responses", an array of 2 positive or adaptive societal/community responses to mitigate the effect. Each outcome should be a concise label.`;
+    // Build context from parent chain
+    let contextPrompt = '';
+    if (parentChain.length > 0) {
+      contextPrompt = `\n\nCascading chain context (what led to this):
+${parentChain.map((node, i) => `${i + 1}. ${node}`).join('\n')}
+→ ${nodeLabel}
+
+Based on this specific cascading chain, identify what "${nodeLabel}" would directly cause next.`;
+    }
+    
+    const prompt = `The societal effect "${nodeLabel}" has occurred${parentChain.length > 0 ? ' as part of a cascading sequence' : ''}.${contextPrompt}
+
+Analyze what "${nodeLabel}" would directly cause next in the cascading effect chain. Consider the cumulative impact of the preceding events.
+
+Generate distinct and plausible direct outcomes. Provide two categories in a JSON object:
+- "consequences": an array of 3 direct, negative outcomes that "${nodeLabel}" specifically causes
+- "responses": an array of 2 positive or adaptive societal/community responses to mitigate "${nodeLabel}"
+
+Each outcome should be a concise, specific label (not generic) that shows clear causation from "${nodeLabel}".`;
+    
     const schema = {
       type: Type.OBJECT,
       properties: {
         consequences: {
           type: Type.ARRAY,
-          description: 'An array of 3 direct, negative outcomes.',
+          description: 'An array of 3 direct, negative outcomes caused by this specific effect.',
           items: { type: Type.STRING },
         },
         responses: {
           type: Type.ARRAY,
-          description: 'An array of 2 positive or adaptive societal responses.',
+          description: 'An array of 2 positive or adaptive societal responses to this specific effect.',
           items: { type: Type.STRING },
         },
       },
@@ -194,7 +216,7 @@ if (isMock) {
     const result = await generateWithRetries<{ consequences: string[]; responses: string[] }>(prompt, schema);
     
     // Cache the result
-    expandCache.set(nodeLabel, result);
+    expandCache.set(cacheKey, result);
     return result;
   };
 
